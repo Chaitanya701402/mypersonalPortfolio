@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio — Avula Lakshmi Venkata Chaitanya</title>
+  <style>
+    /* ── Reset & base ───────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:   #0d1b2a;
+      --blue:   #1b4f72;
+      --accent: #2e86c1;
+      --sky:    #aed6f1;
+      --light:  #f0f4f8;
+      --white:  #ffffff;
+      --text:   #1a1a2e;
+      --muted:  #555e6e;
+      --card:   #ffffff;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(13,27,42,0.10);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--light);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    /* ── Nav ──────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--navy);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2.5rem;
+      height: 60px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    }
+    nav .logo {
+      color: var(--sky);
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: 0.5px;
+    }
+    nav ul {
+      list-style: none;
+      display: flex; gap: 2rem;
+    }
+    nav ul a {
+      color: #ccdce8;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 500;
+      letter-spacing: 0.4px;
+      transition: color 0.2s;
+    }
+    nav ul a:hover { color: var(--sky); }
+
+    /* ── Hero ─────────────────────────────────── */
+    #intro {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 60%, #1a6898 100%);
+      color: var(--white);
+      padding: 5rem 2.5rem 4.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    #intro::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 70% 30%, rgba(46,134,193,0.18) 0%, transparent 65%);
+    }
+    .avatar {
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: var(--sky);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 1.5rem;
+      border: 4px solid rgba(255,255,255,0.25);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      position: relative; z-index: 1;
+    }
+    #intro h1 {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      position: relative; z-index: 1;
+    }
+    #intro .tagline {
+      font-size: 1.05rem;
+      color: var(--sky);
+      margin-top: 0.4rem;
+      font-weight: 500;
+      position: relative; z-index: 1;
+    }
+    #intro .bio {
+      max-width: 680px;
+      margin-top: 1.5rem;
+      font-size: 1rem;
+      color: #d4e6f1;
+      line-height: 1.8;
+      position: relative; z-index: 1;
+    }
+    .chips {
+      display: flex; flex-wrap: wrap; gap: 0.55rem;
+      justify-content: center;
+      margin-top: 1.6rem;
+      position: relative; z-index: 1;
+    }
+    .chip {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.22);
+      color: #e8f4fc;
+      padding: 0.3rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    /* ── Sections ─────────────────────────────── */
+    section { padding: 4.5rem 2.5rem; max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+    }
+    h2 {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 0.6rem;
+    }
+    .section-divider {
+      width: 48px; height: 4px;
+      background: var(--accent);
+      border-radius: 2px;
+      margin-bottom: 2.2rem;
+    }
+    .section-intro {
+      color: var(--muted);
+      font-size: 0.97rem;
+      max-width: 620px;
+      margin-bottom: 2.4rem;
+    }
+
+    /* ── Project cards ────────────────────────── */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.6rem;
+    }
+    .project-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.8rem;
+      border-top: 4px solid var(--accent);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .project-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(13,27,42,0.14); }
+    .project-card h3 {
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 0.5rem;
+    }
+    .project-card p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 1rem;
+    }
+    .tech-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .tech-tag {
+      background: #e8f4fc;
+      color: var(--accent);
+      padding: 0.2rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
+    .project-outcome {
+      margin-top: 0.9rem;
+      font-size: 0.83rem;
+      color: #2e7d32;
+      font-weight: 600;
+      background: #e8f5e9;
+      padding: 0.35rem 0.7rem;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    /* ── Courses ──────────────────────────────── */
+    .courses-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.2rem;
+    }
+    .course-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.4rem 1.6rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      transition: transform 0.2s;
+    }
+    .course-card:hover { transform: translateY(-3px); }
+    .course-icon {
+      width: 42px; height: 42px; flex-shrink: 0;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      color: white;
+    }
+    .course-card h4 {
+      font-size: 0.93rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 0.2rem;
+    }
+    .course-card p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .course-meta {
+      font-size: 0.76rem;
+      color: var(--accent);
+      font-weight: 600;
+      margin-top: 0.4rem;
+    }
+
+    /* ── Resume ───────────────────────────────── */
+    #resume { background: var(--white); }
+    #resume > .inner { max-width: 1100px; margin: 0 auto; padding: 4.5rem 2.5rem; }
+    .resume-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem;
+    }
+    @media (max-width: 700px) { .resume-grid { grid-template-columns: 1fr; } }
+    .resume-block h3 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--sky);
+    }
+    .resume-item { margin-bottom: 1.3rem; }
+    .resume-item strong {
+      display: block;
+      font-size: 0.93rem;
+      color: var(--navy);
+      font-weight: 700;
+    }
+    .resume-item span {
+      font-size: 0.82rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .resume-item p {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+      line-height: 1.6;
+    }
+    .skills-list {
+      display: flex; flex-wrap: wrap; gap: 0.5rem;
+      margin-top: 0.2rem;
+    }
+    .skill-pill {
+      background: var(--light);
+      color: var(--navy);
+      padding: 0.28rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1.5px solid #d0dde9;
+    }
+    .contact-list { list-style: none; margin-top: 0.3rem; }
+    .contact-list li {
+      font-size: 0.88rem;
+      color: var(--muted);
+      padding: 0.25rem 0;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .contact-list li::before { content: '→'; color: var(--accent); font-weight: 700; }
+
+    /* ── Footer ───────────────────────────────── */
+    footer {
+      background: var(--navy);
+      color: #8caabe;
+      text-align: center;
+      padding: 2rem 1rem;
+      font-size: 0.82rem;
+    }
+    footer strong { color: var(--sky); }
+
+    /* ── Responsive ───────────────────────────── */
+    @media (max-width: 600px) {
+      nav ul { gap: 1rem; }
+      nav ul a { font-size: 0.78rem; }
+      section { padding: 3rem 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ───────────────────────────────────────────────── -->
+<nav>
+  <span class="logo">A.L.V.Chaitanya</span>
+  <ul>
+    <li><a href="#intro">Intro</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#courses">Courses</a></li>
+    <li><a href="#resume">Resume</a></li>
+  </ul>
+</nav>
+
+<!-- ── Hero / Introduction ──────────────────────────────────────── -->
+<section id="intro" style="max-width:100%; padding:5rem 2.5rem 4.5rem;">
+  <div class="avatar">AC</div>
+  <h1>Avula Lakshmi Venkata Chaitanya</h1>
+  <p class="tagline">B.Tech Computer Science &amp; Engineering &nbsp;·&nbsp; VIT Vellore</p>
+  <p class="bio">
+    I am a Computer Science undergraduate at Vellore Institute of Technology, Vellore,
+    passionate about building software that solves real-world problems. My interests span
+    full-stack web development, machine learning, and systems programming. I enjoy
+    translating complex ideas into clean, functional code and am always eager to learn
+    new technologies and collaborate on meaningful projects.
+  </p>
+  <div class="chips">
+    <span class="chip">Full-Stack Development</span>
+    <span class="chip">Machine Learning</span>
+    <span class="chip">Data Structures &amp; Algorithms</span>
+    <span class="chip">Python · Java · C++</span>
+    <span class="chip">Open Source Enthusiast</span>
+  </div>
+</section>
+
+<!-- ── Projects ──────────────────────────────────────────────────── -->
+<section id="projects">
+  <p class="section-label">Portfolio</p>
+  <h2>Key Projects</h2>
+  <div class="section-divider"></div>
+  <p class="section-intro">
+    A selection of academic and personal projects that reflect my technical breadth
+    and problem-solving approach.
+  </p>
+
+  <div class="projects-grid">
+
+    <!-- Project 1 -->
+    <div class="project-card">
+      <h3>Smart Attendance System using Face Recognition</h3>
+      <p>
+        Developed a real-time attendance management system that uses OpenCV and the
+        face_recognition library to identify students from a live webcam feed. Attendance
+        records are automatically logged to a CSV file, eliminating manual roll-calls and
+        proxy attendance.
+      </p>
+      <div class="tech-tags">
+        <span class="tech-tag">Python</span>
+        <span class="tech-tag">OpenCV</span>
+        <span class="tech-tag">face_recognition</span>
+        <span class="tech-tag">NumPy</span>
+        <span class="tech-tag">CSV</span>
+      </div>
+      <div class="project-outcome">&#10003; Achieved ~96% recognition accuracy on test set</div>
+    </div>
+
+    <!-- Project 2 -->
+    <div class="project-card">
+      <h3>E-Commerce Web Application</h3>
+      <p>
+        Built a fully functional e-commerce platform with user authentication, product
+        listing, shopping cart, and order management. The backend REST API was developed
+        in Node.js/Express with a MongoDB database, and the frontend was crafted using
+        React with responsive design principles.
+      </p>
+      <div class="tech-tags">
+        <span class="tech-tag">React</span>
+        <span class="tech-tag">Node.js</span>
+        <span class="tech-tag">Express</span>
+        <span class="tech-tag">MongoDB</span>
+        <span class="tech-tag">JWT Auth</span>
+      </div>
+      <div class="project-outcome">&#10003; End-to-end CRUD, deployed on Render</div>
+    </div>
+
+    <!-- Project 3 -->
+    <div class="project-card">
+      <h3>Sentiment Analysis on Social Media Data</h3>
+      <p>
+        Scraped and preprocessed Twitter data using Tweepy, then trained a Logistic
+        Regression and an LSTM classifier to predict sentiment (positive / negative /
+        neutral). Visualised trends and word clouds using Matplotlib and WordCloud.
+      </p>
+      <div class="tech-tags">
+        <span class="tech-tag">Python</span>
+        <span class="tech-tag">NLTK</span>
+        <span class="tech-tag">TensorFlow/Keras</span>
+        <span class="tech-tag">Tweepy</span>
+        <span class="tech-tag">Matplotlib</span>
+      </div>
+      <div class="project-outcome">&#10003; LSTM model: 88% classification accuracy</div>
+    </div>
+
+    <!-- Project 4 -->
+    <div class="project-card">
+      <h3>Online Judge &amp; Coding Platform (Mini)</h3>
+      <p>
+        Designed a simplified competitive programming judge that accepts code submissions
+        in Python, C++, and Java, compiles them in isolated Docker containers, runs against
+        hidden test cases, and returns verdicts within a time limit — mimicking platforms
+        like LeetCode.
+      </p>
+      <div class="tech-tags">
+        <span class="tech-tag">Flask</span>
+        <span class="tech-tag">Docker</span>
+        <span class="tech-tag">PostgreSQL</span>
+        <span class="tech-tag">C++</span>
+        <span class="tech-tag">Python</span>
+      </div>
+      <div class="project-outcome">&#10003; Supports multi-language judging in isolated sandboxes</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Courses ───────────────────────────────────────────────────── -->
+<section id="courses" style="background:#f7fafd; padding:4.5rem 2.5rem; max-width:100%;">
+  <div style="max-width:1100px; margin:0 auto;">
+    <p class="section-label">Academics</p>
+    <h2>Important Courses</h2>
+    <div class="section-divider"></div>
+    <p class="section-intro">
+      Core and elective courses at VIT Vellore that have shaped my technical foundation.
+    </p>
+
+    <div class="courses-grid">
+
+      <div class="course-card">
+        <div class="course-icon">&#128202;</div>
+        <div>
+          <h4>Data Structures &amp; Algorithms</h4>
+          <p>Arrays, linked lists, trees, graphs, dynamic programming, and complexity analysis. Foundation for competitive programming and technical interviews.</p>
+          <div class="course-meta">VIT Vellore &nbsp;·&nbsp; Core</div>
+        </div>
+      </div>
+
+      <div class="course-card">
+        <div class="course-icon">&#129302;</div>
+        <div>
+          <h4>Machine Learning</h4>
+          <p>Supervised &amp; unsupervised learning, regression, classification, SVM, decision trees, neural networks, and model evaluation metrics.</p>
+          <div class="course-meta">VIT Vellore &nbsp;·&nbsp; Core Elective</div>
+        </div>
+      </div>
+
+      <div class="course-card">
+        <div class="course-icon">&#128274;</div>
+        <div>
+          <h4>Computer Networks</h4>
+          <p>OSI &amp; TCP/IP models, routing protocols, socket programming, HTTP/HTTPS, DNS, and network security fundamentals.</p>
+          <div class="course-meta">VIT Vellore &nbsp;·&nbsp; Core</div>
+        </div>
+      </div>
+
+      <div class="course-card">
+        <div class="course-icon">&#128190;</div>
+        <div>
+          <h4>Database Management Systems</h4>
+          <p>Relational algebra, SQL, normalisation, transactions, indexing, and an introduction to NoSQL databases like MongoDB.</p>
+          <div class="course-meta">VIT Vellore &nbsp;·&nbsp; Core</div>
+        </div>
+      </div>
+
+      <div class="course-card">
+        <div class="course-icon">&#128187;</div>
+        <div>
+          <h4>Operating Systems</h4>
+          <p>Process scheduling, memory management, file systems, deadlocks, synchronisation primitives, and virtual memory.</p>
+          <div class="course-meta">VIT Vellore &nbsp;·&nbsp; Core</div>
+        </div>
+      </div>
+
+      <div class="course-card">
+        <div class="course-icon">&#9881;</div>
+        <div>
+          <h4>Object-Oriented Programming</h4>
+          <p>Classes, inheritance, polymorphism, design patterns, exception handling, and SOLID principles using Java and C++.</p>
+          <div class="course-meta">VIT Vellore &nbsp;·&nbsp; Core</div>
+        </div>
+      </div>
+
+      <div class="course-card">
+        <div class="course-icon">&#128200;</div>
+        <div>
+          <h4>Probability &amp; Statistics for Engineers</h4>
+          <p>Probability distributions, hypothesis testing, regression analysis, Bayesian inference — essential for ML and data science applications.</p>
+          <div class="course-meta">VIT Vellore &nbsp;·&nbsp; Core</div>
+        </div>
+      </div>
+
+      <div class="course-card">
+        <div class="course-icon">&#127760;</div>
+        <div>
+          <h4>Cloud Computing</h4>
+          <p>Cloud service models (IaaS, PaaS, SaaS), virtualisation, AWS/Azure basics, containerisation with Docker, and microservices architecture.</p>
+          <div class="course-meta">VIT Vellore &nbsp;·&nbsp; Elective</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Resume ────────────────────────────────────────────────────── -->
+<section id="resume" style="background:white; padding:4.5rem 2.5rem; max-width:100%;">
+  <div style="max-width:1100px; margin:0 auto;">
+    <p class="section-label">Curriculum Vitae</p>
+    <h2>Resume</h2>
+    <div class="section-divider"></div>
+
+    <div class="resume-grid">
+
+      <!-- Left column -->
+      <div>
+
+        <div class="resume-block">
+          <h3>Education</h3>
+          <div class="resume-item">
+            <strong>B.Tech — Computer Science &amp; Engineering</strong>
+            <span>Vellore Institute of Technology, Vellore &nbsp;·&nbsp; 2025 – 2029</span>
+            <p>Pursuing a full-time degree with a focus on software engineering, machine learning, and distributed systems. Active participant in technical events and hackathons.</p>
+          </div>
+          <div class="resume-item">
+            <strong>Class XII (CBSE)</strong>
+            <span>2024 – 2025 &nbsp;·&nbsp; PCM with Computer Science</span>
+            <p>Scored 85% overall, with 100/100 in Artificial Intelligence.</p>
+          </div>
+          <div class="resume-item">
+            <strong>Class X (CBSE)</strong>
+            <span>2022 – 2023</span>
+            <p>Scored 96%.</p>
+          </div>
+        </div>
+
+
+
+        <div class="resume-block" style="margin-top:2rem;">
+          <h3>Achievements</h3>
+          <div class="resume-item">
+            <strong>Hackathon Participant — VIT HackFusion 2025</strong>
+            <p>Developed a health-tech prototype in 24 hours using React Native and Firebase, reaching the top 10 finalist teams.</p>
+          </div>
+          <div class="resume-item">
+            <strong>Academic Excellence Award</strong>
+            <p>Recognised for consistent academic performance throughout the semesters at VIT Vellore.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right column -->
+      <div>
+
+        <div class="resume-block">
+          <h3>Technical Skills</h3>
+          <div class="resume-item">
+            <strong>Languages</strong>
+            <div class="skills-list">
+              <span class="skill-pill">Python</span>
+              <span class="skill-pill">Java</span>
+              <span class="skill-pill">C++</span>
+              <span class="skill-pill">JavaScript</span>
+              <span class="skill-pill">SQL</span>
+              <span class="skill-pill">Bash</span>
+            </div>
+          </div>
+          <div class="resume-item" style="margin-top:0.9rem;">
+            <strong>Frameworks &amp; Libraries</strong>
+            <div class="skills-list">
+              <span class="skill-pill">React</span>
+              <span class="skill-pill">Node.js</span>
+              <span class="skill-pill">Express</span>
+              <span class="skill-pill">Flask</span>
+              <span class="skill-pill">TensorFlow</span>
+              <span class="skill-pill">scikit-learn</span>
+              <span class="skill-pill">OpenCV</span>
+            </div>
+          </div>
+          <div class="resume-item" style="margin-top:0.9rem;">
+            <strong>Tools &amp; Platforms</strong>
+            <div class="skills-list">
+              <span class="skill-pill">Git &amp; GitHub</span>
+              <span class="skill-pill">Docker</span>
+              <span class="skill-pill">MongoDB</span>
+              <span class="skill-pill">PostgreSQL</span>
+              <span class="skill-pill">VS Code</span>
+              <span class="skill-pill">Linux</span>
+              <span class="skill-pill">Postman</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="resume-block" style="margin-top:2rem;">
+          <h3>Contact</h3>
+          <ul class="contact-list">
+            <li>avula.lakshmi2025@vitstudent.ac.in</li>
+            <li>VIT Vellore, Tamil Nadu, India</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ────────────────────────────────────────────────────── -->
+<footer>
+  <p>&copy; 2026 &nbsp;<strong>Avula Lakshmi Venkata Chaitanya</strong> &nbsp;·&nbsp; B.Tech CSE, VIT Vellore</p>
+
+</footer>
+
+</body>
+</html>

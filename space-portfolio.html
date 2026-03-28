@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Chaitanya — Space Portfolio Quest</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600;700&family=Rajdhani:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif}
+canvas#gameCanvas{display:block;position:fixed;inset:0;z-index:0}
+
+/* ── HUD ── */
+#hud{position:fixed;top:0;left:0;right:0;z-index:20;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;pointer-events:none;opacity:0;transition:opacity .6s}
+#hud.show{opacity:1}
+.hud-left,.hud-right{display:flex;align-items:center;gap:14px}
+.hud-label{font-family:'Orbitron',sans-serif;font-size:11px;color:#5af;letter-spacing:2px;font-weight:700}
+.hud-bar-bg{width:140px;height:7px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+.hud-bar{height:100%;border-radius:4px;transition:width .3s}
+.fuel-bar{background:linear-gradient(90deg,#ff6b6b,#ffa06b);width:100%}
+.shield-bar{background:linear-gradient(90deg,#5af,#88f);width:100%}
+.hud-score{font-family:'Orbitron',sans-serif;font-size:13px;color:#ffd740;font-weight:700;letter-spacing:1px}
+.hud-planet{font-family:'JetBrains Mono',monospace;font-size:11px;color:#7ff;letter-spacing:1px}
+.hud-speed{font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,255,255,.5);letter-spacing:1px}
+#minimap{width:180px;height:32px;background:rgba(0,0,0,.4);border:1px solid rgba(90,170,255,.2);border-radius:6px;position:relative;overflow:hidden}
+.mm-dot{position:absolute;border-radius:50%;top:50%;transform:translate(-50%,-50%)}
+.mm-rocket{width:6px;height:6px;background:#5f5;box-shadow:0 0 6px #5f5}
+.mm-planet{width:8px;height:8px;box-shadow:0 0 4px currentColor}
+
+/* ── Intro overlay ── */
+#intro-overlay{position:fixed;inset:0;z-index:50;background:radial-gradient(ellipse at 50% 40%,#0a1628,#000);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity 1s}
+#intro-overlay h1{font-family:'Orbitron',sans-serif;font-size:clamp(22px,5vw,48px);font-weight:900;color:#fff;text-align:center;letter-spacing:2px;line-height:1.4}
+#intro-overlay h1 em{font-style:normal;color:#5af;text-shadow:0 0 30px rgba(90,170,255,.5)}
+#intro-overlay p{font-family:'JetBrains Mono',monospace;font-size:13px;color:rgba(255,255,255,.5);letter-spacing:1px;text-align:center}
+#intro-overlay .controls-hint{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.35);margin-top:8px;text-align:center;line-height:1.9}
+#launch-btn{
+  font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;
+  padding:14px 40px;background:transparent;color:#ffd740;
+  border:2px solid #ffd740;border-radius:8px;cursor:pointer;
+  letter-spacing:2px;margin-top:10px;transition:all .25s;
+  animation:pulse-gold 2s ease-in-out infinite;
+}
+#launch-btn:hover{background:#ffd740;color:#000;box-shadow:0 0 40px rgba(255,215,64,.5)}
+@keyframes pulse-gold{0%,100%{box-shadow:0 0 8px rgba(255,215,64,.2)}50%{box-shadow:0 0 28px rgba(255,215,64,.6)}}
+
+/* ── Planet info panel ── */
+#planet-panel{
+  position:fixed;inset:0;z-index:40;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(10px);
+  opacity:0;pointer-events:none;transition:opacity .5s;
+}
+#planet-panel.show{opacity:1;pointer-events:all}
+#panel-inner{
+  background:rgba(10,18,40,.95);border:1px solid rgba(90,170,255,.2);
+  border-radius:16px;max-width:800px;width:92%;max-height:85vh;overflow-y:auto;
+  padding:2.5rem;position:relative;
+  box-shadow:0 0 60px rgba(90,170,255,.1);
+}
+#panel-inner::-webkit-scrollbar{width:6px}
+#panel-inner::-webkit-scrollbar-thumb{background:rgba(90,170,255,.2);border-radius:3px}
+#panel-close{
+  position:absolute;top:14px;right:18px;font-family:'Orbitron',sans-serif;
+  font-size:12px;color:#5af;background:none;border:1px solid rgba(90,170,255,.3);
+  padding:6px 14px;border-radius:6px;cursor:pointer;transition:all .2s;letter-spacing:1px;
+}
+#panel-close:hover{background:rgba(90,170,255,.15);box-shadow:0 0 12px rgba(90,170,255,.3)}
+#panel-title{
+  font-family:'Orbitron',sans-serif;font-size:clamp(18px,3vw,26px);font-weight:900;
+  color:#fff;margin-bottom:6px;letter-spacing:1px;
+}
+#panel-subtitle{font-family:'JetBrains Mono',monospace;font-size:11px;color:#5af;letter-spacing:2px;margin-bottom:24px}
+#panel-content{color:rgba(200,216,230,.9);line-height:1.8;font-size:15px}
+#panel-content h3{
+  font-family:'Orbitron',sans-serif;font-size:14px;color:#ffd740;
+  margin:22px 0 10px;letter-spacing:1px;font-weight:700;
+}
+#panel-content .card{
+  background:rgba(255,255,255,.03);border:1px solid rgba(90,170,255,.12);
+  border-radius:10px;padding:16px;margin-bottom:12px;transition:border-color .3s;
+}
+#panel-content .card:hover{border-color:rgba(90,170,255,.35)}
+#panel-content .card-title{font-family:'Orbitron',sans-serif;font-size:13px;color:#fff;font-weight:700;margin-bottom:6px}
+#panel-content .card-desc{font-size:13.5px;color:rgba(200,216,230,.7);line-height:1.7}
+#panel-content .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+#panel-content .tag{
+  font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 8px;
+  border-radius:4px;background:rgba(90,170,255,.08);color:#5af;
+  border:1px solid rgba(90,170,255,.15);letter-spacing:.5px;
+}
+#panel-content .pill{
+  display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;
+  font-size:11px;padding:4px 10px;border-radius:5px;margin:3px;font-weight:600;
+}
+#panel-content .pl{background:rgba(90,170,255,.08);color:#5af;border:1px solid rgba(90,170,255,.15)}
+#panel-content .pf{background:rgba(0,255,135,.08);color:#0f8;border:1px solid rgba(0,255,135,.15)}
+#panel-content .pt{background:rgba(180,122,255,.08);color:#b47aff;border:1px solid rgba(180,122,255,.15)}
+#panel-content .edu-item{margin-bottom:14px}
+#panel-content .edu-title{font-size:14px;color:#fff;font-weight:700}
+#panel-content .edu-meta{font-family:'Orbitron',sans-serif;font-size:10px;color:#5af;letter-spacing:1px;margin:3px 0}
+#panel-content .edu-desc{font-size:13px;color:rgba(200,216,230,.6)}
+#panel-content .achievement{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:rgba(255,215,64,.04);border:1px solid rgba(255,215,64,.12);
+  border-radius:8px;margin-bottom:8px;
+}
+#panel-content .ach-icon{font-size:22px}
+#panel-content .ach-text strong{font-size:13px;color:#ffd740;display:block;margin-bottom:2px}
+#panel-content .ach-text span{font-size:12px;color:rgba(200,216,230,.55)}
+
+/* ── Notification ── */
+#notif{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-60px);
+  z-index:30;font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;
+  color:#ffd740;background:rgba(10,18,40,.85);border:1px solid rgba(255,215,64,.25);
+  padding:10px 28px;border-radius:8px;letter-spacing:1px;
+  opacity:0;transition:all .5s;pointer-events:none;
+  box-shadow:0 0 20px rgba(255,215,64,.15);white-space:nowrap;
+}
+#notif.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Warning flash ── */
+#warning{
+  position:fixed;inset:0;z-index:15;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 50%,rgba(255,60,60,.12),transparent 70%);
+  opacity:0;transition:opacity .15s;
+}
+#warning.flash{opacity:1}
+
+/* ── Mobile joystick ── */
+#mobile-controls{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:25;
+  display:none;gap:10px;
+}
+.mob-btn{
+  width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);
+  font-size:20px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;user-select:none;-webkit-user-select:none;
+  transition:background .15s;
+}
+.mob-btn:active{background:rgba(90,170,255,.25);border-color:#5af}
+@media(max-width:768px){#mobile-controls{display:flex}}
+@media(max-width:600px){
+  #panel-inner{padding:1.5rem}
+  #panel-content{font-size:13px}
+}
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-left">
+    <span class="hud-label">FUEL</span>
+    <div class="hud-bar-bg"><div class="hud-bar fuel-bar" id="fuelBar"></div></div>
+    <span class="hud-label" style="margin-left:8px">SHIELD</span>
+    <div class="hud-bar-bg"><div class="hud-bar shield-bar" id="shieldBar"></div></div>
+  </div>
+  <div class="hud-right">
+    <span class="hud-speed" id="speedTxt">SPEED 0</span>
+    <span class="hud-planet" id="planetTxt">DEEP SPACE</span>
+    <span class="hud-score" id="scoreTxt">XP 0</span>
+  </div>
+</div>
+
+<!-- Notification -->
+<div id="notif"></div>
+<!-- Warning flash -->
+<div id="warning"></div>
+
+<!-- Intro -->
+<div id="intro-overlay">
+  <p style="color:#5af;font-size:10px;letter-spacing:4px;font-family:'Orbitron',sans-serif">PORTFOLIO OS v4.0</p>
+  <h1>EXPLORE MY <em>UNIVERSE</em></h1>
+  <p>A.L.V. Chaitanya · B.Tech CSE · VIT Vellore</p>
+  <p style="max-width:500px;font-size:12px;color:rgba(255,255,255,.35);line-height:1.8">
+    Pilot your rocket through space. Visit 4 planets to discover my portfolio —
+    projects, skills, achievements, and more. Dodge asteroids along the way!
+  </p>
+  <div class="controls-hint">
+    <strong style="color:#5af">W/&#8593;</strong> Thrust &nbsp;&nbsp;
+    <strong style="color:#5af">A/&#8592; D/&#8594;</strong> Steer &nbsp;&nbsp;
+    <strong style="color:#5af">S/&#8595;</strong> Brake &nbsp;&nbsp;
+    <strong style="color:#5af">SPACE</strong> Land on Planet
+  </div>
+  <button id="launch-btn" onclick="startGame()">&#9650; LAUNCH</button>
+</div>
+
+<!-- Planet panel -->
+<div id="planet-panel">
+  <div id="panel-inner">
+    <button id="panel-close" onclick="closePanel()">&#10005; CONTINUE FLIGHT</button>
+    <h2 id="panel-title"></h2>
+    <p id="panel-subtitle"></p>
+    <div id="panel-content"></div>
+  </div>
+</div>
+
+<!-- Mobile controls -->
+<div id="mobile-controls">
+  <div class="mob-btn" data-key="a">&#9664;</div>
+  <div class="mob-btn" data-key="w">&#9650;</div>
+  <div class="mob-btn" data-key="s">&#9660;</div>
+  <div class="mob-btn" data-key="d">&#9654;</div>
+  <div class="mob-btn" data-key=" " style="width:70px;border-radius:12px;font-size:11px;font-family:'Orbitron',sans-serif">LAND</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════
+   PORTFOLIO DATA
+═══════════════════════════════════════════════════════ */
+const PLANET_DATA = [
+  {
+    name: 'PLANET INTRO',
+    subtitle: '// WHO AM I',
+    color: 0x4488ff,
+    ring: true,
+    content: `
+      <h3>&#128640; About Me</h3>
+      <p>I am <strong>Avula Lakshmi Venkata Chaitanya</strong>, a first-year B.Tech Computer Science & Engineering student at <strong>VIT Vellore</strong> (Batch 2025–2029).</p>
+      <p>I am passionate about building software that solves real-world problems. My interests span full-stack web development, machine learning, and systems programming. I scored a perfect <strong style="color:#ffd740">100/100 in Artificial Intelligence</strong> in my Class XII boards — and I carry that same precision into every line of code I write.</p>
+
+      <h3>&#127919; Core Traits</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+        <span class="pill pl">&#9889; Full-Stack Dev</span>
+        <span class="pill pf">&#129504; Machine Learning</span>
+        <span class="pill pt">&#128202; DSA & Algorithms</span>
+        <span class="pill pl">&#128013; Python · Java · C++</span>
+        <span class="pill pf">&#127919; Problem Solver</span>
+        <span class="pill pt">&#128293; Quick Learner</span>
+      </div>
+
+      <h3>&#127891; Education</h3>
+      <div class="edu-item"><div class="edu-title">B.Tech — Computer Science & Engineering</div><div class="edu-meta">VIT VELLORE · 2025 – 2029</div><div class="edu-desc">Pursuing a full-time degree with focus on software engineering, machine learning, and distributed systems.</div></div>
+      <div class="edu-item"><div class="edu-title">Class XII (CBSE)</div><div class="edu-meta">2024 – 2025 · PCM + COMPUTER SCIENCE</div><div class="edu-desc">Scored 85% overall. Achieved 100/100 in Artificial Intelligence.</div></div>
+      <div class="edu-item"><div class="edu-title">Class X (CBSE)</div><div class="edu-meta">2022 – 2023</div><div class="edu-desc">Scored 96%.</div></div>
+    `
+  },
+  {
+    name: 'PLANET QUESTS',
+    subtitle: '// MY PROJECTS',
+    color: 0x44ff88,
+    ring: false,
+    content: `
+      <h3>&#128220; Quest Log — Projects</h3>
+
+      <div class="card">
+        <div class="card-title">&#127919; OPERATION: FACE SHIELD</div>
+        <div class="card-desc">Built a real-time attendance system using face recognition. Uses a live webcam feed to identify students and auto-logs attendance to CSV — zero proxy, zero manual roll-call.</div>
+        <div class="tags"><span class="tag">Python</span><span class="tag">OpenCV</span><span class="tag">face_recognition</span><span class="tag">NumPy</span></div>
+        <div style="margin-top:8px;font-size:12px;color:#0f8;font-weight:600">&#10003; ~96% Recognition Accuracy</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">&#128722; PROJECT: NEXUS MARKET</div>
+        <div class="card-desc">Engineered a full-stack e-commerce platform — JWT authentication, product catalogue, cart, checkout, and order management. React frontend, Express/Node backend, MongoDB persistence.</div>
+        <div class="tags"><span class="tag">React</span><span class="tag">Node.js</span><span class="tag">Express</span><span class="tag">MongoDB</span><span class="tag">JWT</span></div>
+        <div style="margin-top:8px;font-size:12px;color:#0f8;font-weight:600">&#10003; End-to-End CRUD Deployed</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">&#129504; MISSION: MIND READER</div>
+        <div class="card-desc">Trained LSTM and Logistic Regression classifiers on Twitter data to predict sentiment. NLP pipeline with Tweepy + NLTK, visual storytelling with Matplotlib word clouds.</div>
+        <div class="tags"><span class="tag">Python</span><span class="tag">NLTK</span><span class="tag">TensorFlow</span><span class="tag">Tweepy</span><span class="tag">Matplotlib</span></div>
+        <div style="margin-top:8px;font-size:12px;color:#0f8;font-weight:600">&#10003; 88% Classification Accuracy</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">&#9881;&#65039; CODEX: ARENA JUDGE</div>
+        <div class="card-desc">A miniature competitive programming judge — accepts Python, C++ and Java submissions, sandboxes them in Docker containers, and returns verdicts within time limits.</div>
+        <div class="tags"><span class="tag">Flask</span><span class="tag">Docker</span><span class="tag">PostgreSQL</span><span class="tag">C++</span><span class="tag">Python</span></div>
+        <div style="margin-top:8px;font-size:12px;color:#0f8;font-weight:600">&#10003; Multi-Language Sandboxed Judging</div>
+      </div>
+    `
+  },
+  {
+    name: 'PLANET SKILLS',
+    subtitle: '// COURSES & SKILL TREE',
+    color: 0xb47aff,
+    ring: true,
+    content: `
+      <h3>&#127795; Skill Tree — Courses at VIT Vellore</h3>
+
+      <div class="card"><div class="card-title">&#128202; Data Structures & Algorithms</div><div class="card-desc">Arrays, trees, graphs, DP, and complexity analysis — the backbone of problem solving and interviews.</div><div style="margin-top:6px;font-size:11px;color:#b47aff">CORE · MASTERY ████░ 4/5</div></div>
+
+      <div class="card"><div class="card-title">&#129302; Machine Learning</div><div class="card-desc">Supervised & unsupervised learning, SVM, decision trees, neural networks, and model evaluation.</div><div style="margin-top:6px;font-size:11px;color:#b47aff">CORE ELECTIVE · MASTERY ███░░ 3/5</div></div>
+
+      <div class="card"><div class="card-title">&#128274; Computer Networks</div><div class="card-desc">OSI & TCP/IP, routing, socket programming, HTTP, DNS, and network security.</div><div style="margin-top:6px;font-size:11px;color:#b47aff">CORE · MASTERY ████░ 4/5</div></div>
+
+      <div class="card"><div class="card-title">&#128190; Database Management Systems</div><div class="card-desc">SQL, relational algebra, normalisation, transactions, indexing, and NoSQL basics.</div><div style="margin-top:6px;font-size:11px;color:#b47aff">CORE · MASTERY ████░ 4/5</div></div>
+
+      <div class="card"><div class="card-title">&#128187; Operating Systems</div><div class="card-desc">Process scheduling, memory management, file systems, deadlocks, and synchronisation.</div><div style="margin-top:6px;font-size:11px;color:#b47aff">CORE · MASTERY ███░░ 3/5</div></div>
+
+      <div class="card"><div class="card-title">&#9881; OOP</div><div class="card-desc">Inheritance, polymorphism, design patterns, SOLID principles — Java & C++.</div><div style="margin-top:6px;font-size:11px;color:#b47aff">CORE · MASTERY ████░ 4/5</div></div>
+
+      <div class="card"><div class="card-title">&#128200; Probability & Statistics</div><div class="card-desc">Distributions, hypothesis testing, regression, Bayesian inference for ML applications.</div><div style="margin-top:6px;font-size:11px;color:#b47aff">CORE · MASTERY ███░░ 3/5</div></div>
+
+      <div class="card"><div class="card-title">&#9729; Cloud Computing</div><div class="card-desc">IaaS/PaaS/SaaS, AWS/Azure basics, Docker, and microservices architecture.</div><div style="margin-top:6px;font-size:11px;color:#b47aff">ELECTIVE · MASTERY ██░░░ 2/5</div></div>
+    `
+  },
+  {
+    name: 'PLANET RESUME',
+    subtitle: '// CHARACTER SHEET',
+    color: 0xffd740,
+    ring: false,
+    content: `
+      <h3>&#127942; Achievements Unlocked</h3>
+      <div class="achievement"><span class="ach-icon">&#127942;</span><div class="ach-text"><strong>Hackathon Finalist — VIT HackFusion 2025</strong><span>Built a health-tech prototype in 24 hours with React Native & Firebase. Top 10 finalists.</span></div></div>
+      <div class="achievement"><span class="ach-icon">&#128175;</span><div class="ach-text"><strong>100/100 in Artificial Intelligence</strong><span>Perfect score in AI during Class XII board examinations.</span></div></div>
+      <div class="achievement"><span class="ach-icon">&#11088;</span><div class="ach-text"><strong>Academic Excellence</strong><span>Consistently recognised for strong academic performance at VIT Vellore.</span></div></div>
+
+      <h3>&#127908; Inventory — Technical Skills</h3>
+      <p style="margin-bottom:6px;font-size:13px;color:#5af;font-weight:600">Languages</p>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">
+        <span class="pill pl">Python</span><span class="pill pl">Java</span><span class="pill pl">C++</span>
+        <span class="pill pl">JavaScript</span><span class="pill pl">SQL</span><span class="pill pl">Bash</span>
+      </div>
+      <p style="margin-bottom:6px;font-size:13px;color:#0f8;font-weight:600">Frameworks & Libraries</p>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">
+        <span class="pill pf">React</span><span class="pill pf">Node.js</span><span class="pill pf">Express</span>
+        <span class="pill pf">Flask</span><span class="pill pf">TensorFlow</span><span class="pill pf">scikit-learn</span>
+        <span class="pill pf">OpenCV</span>
+      </div>
+      <p style="margin-bottom:6px;font-size:13px;color:#b47aff;font-weight:600">Tools & Platforms</p>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:16px">
+        <span class="pill pt">Git</span><span class="pill pt">Docker</span><span class="pill pt">MongoDB</span>
+        <span class="pill pt">PostgreSQL</span><span class="pill pt">VS Code</span><span class="pill pt">Linux</span>
+        <span class="pill pt">Postman</span>
+      </div>
+
+      <h3>&#128225; Communications</h3>
+      <div class="card" style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:13px"><strong style="color:#5af;font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:1px">EMAIL</strong>&nbsp;&nbsp; avula.lakshmi2025@vitstudent.ac.in</div>
+        <div style="font-size:13px"><strong style="color:#5af;font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:1px">BASE</strong>&nbsp;&nbsp; VIT Vellore, Tamil Nadu, India</div>
+        <div style="font-size:13px"><strong style="color:#5af;font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:1px">STATUS</strong>&nbsp;&nbsp; <span style="color:#0f8">&#9679; ONLINE — OPEN TO OPPORTUNITIES</span></div>
+      </div>
+
+      <p style="text-align:center;margin-top:24px;font-family:'Orbitron',sans-serif;font-size:12px;color:#ffd740;letter-spacing:2px">&copy; 2026 · AVULA LAKSHMI VENKATA CHAITANYA · B.TECH CSE, VIT VELLORE</p>
+    `
+  }
+];
+
+/* ═══════════════════════════════════════════════════════
+   THREE.JS GAME ENGINE
+═══════════════════════════════════════════════════════ */
+let scene, camera, renderer, clock;
+let rocket, rocketGroup;
+let planets = [], asteroids = [], stars;
+let engineParticles = [];
+let keys = {};
+let fuel = 100, shield = 100, score = 0;
+let gameStarted = false, panelOpen = false;
+let visitedPlanets = new Set();
+let rocketVel = new THREE.Vector3(0, 0, 0);
+const ROCKET_SPEED = 0.8;
+const STEER_SPEED = 0.04;
+const BRAKE_FACTOR = 0.96;
+const PLANET_SPACING = 300;
+const ASTEROID_COUNT = 120;
+
+/* ── Init ── */
+function init() {
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x000010, 0.0008);
+
+  camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 3000);
+  renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias: true });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  clock = new THREE.Clock();
+
+  // Lights
+  const ambient = new THREE.AmbientLight(0x222244, 0.6);
+  scene.add(ambient);
+  const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+  sun.position.set(200, 300, 200);
+  scene.add(sun);
+  const point = new THREE.PointLight(0x5588ff, 0.5, 800);
+  point.position.set(0, 100, 0);
+  scene.add(point);
+
+  createStarfield();
+  createRocket();
+  createPlanets();
+  createAsteroids();
+
+  // Camera position
+  camera.position.set(0, 8, 20);
+
+  addEventListener('resize', onResize);
+  addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+  addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+  // Mobile
+  document.querySelectorAll('.mob-btn').forEach(btn => {
+    const k = btn.dataset.key;
+    btn.addEventListener('touchstart', e => { e.preventDefault(); keys[k] = true; });
+    btn.addEventListener('touchend', e => { e.preventDefault(); keys[k] = false; });
+    btn.addEventListener('mousedown', () => keys[k] = true);
+    btn.addEventListener('mouseup', () => keys[k] = false);
+  });
+
+  animate();
+}
+
+/* ── Starfield ── */
+function createStarfield() {
+  const geo = new THREE.BufferGeometry();
+  const count = 5000;
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    positions[i*3]   = (Math.random() - 0.5) * 2500;
+    positions[i*3+1] = (Math.random() - 0.5) * 2500;
+    positions[i*3+2] = (Math.random() - 0.5) * 2500;
+    const c = new THREE.Color().setHSL(Math.random() * 0.2 + 0.55, 0.6, 0.7 + Math.random() * 0.3);
+    colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const mat = new THREE.PointsMaterial({ size: 1.5, vertexColors: true, transparent: true, opacity: 0.8 });
+  stars = new THREE.Points(geo, mat);
+  scene.add(stars);
+}
+
+/* ── Rocket ── */
+function createRocket() {
+  rocketGroup = new THREE.Group();
+
+  // Body
+  const bodyGeo = new THREE.CylinderGeometry(0.4, 0.6, 4, 12);
+  const bodyMat = new THREE.MeshPhongMaterial({ color: 0xcccccc, shininess: 80 });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.castShadow = true;
+  rocketGroup.add(body);
+
+  // Nose cone
+  const noseGeo = new THREE.ConeGeometry(0.4, 1.5, 12);
+  const noseMat = new THREE.MeshPhongMaterial({ color: 0xff4444, shininess: 100 });
+  const nose = new THREE.Mesh(noseGeo, noseMat);
+  nose.position.y = 2.75;
+  rocketGroup.add(nose);
+
+  // Fins
+  const finShape = new THREE.Shape();
+  finShape.moveTo(0, 0);
+  finShape.lineTo(1.2, 0);
+  finShape.lineTo(0, 2);
+  finShape.closePath();
+  const finGeo = new THREE.ExtrudeGeometry(finShape, { depth: 0.06, bevelEnabled: false });
+  const finMat = new THREE.MeshPhongMaterial({ color: 0x3355aa });
+  for (let i = 0; i < 4; i++) {
+    const fin = new THREE.Mesh(finGeo, finMat);
+    fin.position.y = -2;
+    fin.rotation.y = (Math.PI / 2) * i;
+    fin.position.x = Math.sin(fin.rotation.y) * 0.5;
+    fin.position.z = Math.cos(fin.rotation.y) * 0.5;
+    rocketGroup.add(fin);
+  }
+
+  // Window
+  const winGeo = new THREE.SphereGeometry(0.2, 12, 12);
+  const winMat = new THREE.MeshPhongMaterial({ color: 0x00ccff, emissive: 0x005577, shininess: 120 });
+  const win = new THREE.Mesh(winGeo, winMat);
+  win.position.set(0, 1.5, 0.5);
+  rocketGroup.add(win);
+
+  // Engine glow
+  const glowGeo = new THREE.SphereGeometry(0.5, 12, 12);
+  const glowMat = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.7 });
+  rocket = new THREE.Mesh(glowGeo, glowMat);
+  rocket.position.y = -2.3;
+  rocket.visible = false;
+  rocketGroup.add(rocket);
+
+  // Engine light
+  const eLight = new THREE.PointLight(0xff6600, 2, 20);
+  eLight.position.y = -2.5;
+  rocketGroup.add(eLight);
+  rocketGroup.userData.eLight = eLight;
+  rocketGroup.userData.engineGlow = rocket;
+
+  rocketGroup.rotation.x = Math.PI / 2; // point forward (along -Z)
+  rocketGroup.position.set(0, 0, 10);
+  scene.add(rocketGroup);
+}
+
+/* ── Engine particles ── */
+function spawnEngineParticle() {
+  const geo = new THREE.SphereGeometry(0.12 + Math.random() * 0.15, 4, 4);
+  const mat = new THREE.MeshBasicMaterial({
+    color: new THREE.Color().setHSL(0.06 + Math.random() * 0.08, 1, 0.5 + Math.random() * 0.3),
+    transparent: true, opacity: 0.9
+  });
+  const p = new THREE.Mesh(geo, mat);
+  p.position.copy(rocketGroup.position);
+  p.position.x += (Math.random() - 0.5) * 0.4;
+  p.position.y += (Math.random() - 0.5) * 0.4;
+  p.position.z += 2;
+  p.userData.life = 0.6 + Math.random() * 0.4;
+  p.userData.vel = new THREE.Vector3(
+    (Math.random() - 0.5) * 0.5,
+    (Math.random() - 0.5) * 0.5,
+    2 + Math.random() * 3
+  );
+  scene.add(p);
+  engineParticles.push(p);
+}
+
+/* ── Planets ── */
+function createPlanets() {
+  PLANET_DATA.forEach((pd, i) => {
+    const r = 12 + i * 3;
+    const geo = new THREE.SphereGeometry(r, 48, 48);
+
+    // Procedural bump for realistic look
+    const positions = geo.attributes.position;
+    for (let j = 0; j < positions.count; j++) {
+      const v = new THREE.Vector3().fromBufferAttribute(positions, j);
+      const noise = (Math.sin(v.x * 3) * Math.cos(v.y * 2.7) * Math.sin(v.z * 1.8)) * 0.3;
+      v.normalize().multiplyScalar(r + noise);
+      positions.setXYZ(j, v.x, v.y, v.z);
+    }
+    geo.computeVertexNormals();
+
+    const mat = new THREE.MeshPhongMaterial({
+      color: pd.color,
+      shininess: 30,
+      emissive: new THREE.Color(pd.color).multiplyScalar(0.08),
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+
+    // Place planets along Z axis
+    const z = -(PLANET_SPACING * (i + 1));
+    mesh.position.set(
+      (Math.random() - 0.5) * 60,
+      (Math.random() - 0.5) * 30,
+      z
+    );
+
+    // Ring
+    if (pd.ring) {
+      const ringGeo = new THREE.RingGeometry(r + 3, r + 7, 64);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: pd.color, side: THREE.DoubleSide, transparent: true, opacity: 0.25
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 3;
+      mesh.add(ring);
+    }
+
+    // Atmosphere glow
+    const atmosGeo = new THREE.SphereGeometry(r + 1.5, 32, 32);
+    const atmosMat = new THREE.MeshBasicMaterial({
+      color: pd.color, transparent: true, opacity: 0.08, side: THREE.BackSide
+    });
+    const atmos = new THREE.Mesh(atmosGeo, atmosMat);
+    mesh.add(atmos);
+
+    // Label sprite
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.font = 'bold 28px Orbitron, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText(pd.name, 256, 40);
+    const tex = new THREE.CanvasTexture(canvas);
+    const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.8 });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.scale.set(24, 3, 1);
+    sprite.position.y = r + 8;
+    mesh.add(sprite);
+
+    mesh.userData.planetIndex = i;
+    planets.push(mesh);
+    scene.add(mesh);
+  });
+}
+
+/* ── Asteroids ── */
+function createAsteroids() {
+  const geo = new THREE.DodecahedronGeometry(1, 0);
+  const mat = new THREE.MeshPhongMaterial({ color: 0x665544, flatShading: true });
+
+  for (let i = 0; i < ASTEROID_COUNT; i++) {
+    const mesh = new THREE.Mesh(geo.clone(), mat.clone());
+    const s = 0.5 + Math.random() * 2.5;
+    mesh.scale.set(s, s * (0.6 + Math.random() * 0.8), s);
+    resetAsteroid(mesh, true);
+    mesh.userData.rotSpeed = new THREE.Vector3(
+      (Math.random() - 0.5) * 0.02,
+      (Math.random() - 0.5) * 0.02,
+      (Math.random() - 0.5) * 0.02
+    );
+    asteroids.push(mesh);
+    scene.add(mesh);
+  }
+}
+
+function resetAsteroid(a, initial) {
+  const rz = rocketGroup.position.z;
+  a.position.set(
+    (Math.random() - 0.5) * 120,
+    (Math.random() - 0.5) * 60,
+    initial ? (Math.random() * -1400 - 30) : (rz - 150 - Math.random() * 300)
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   GAME LOOP
+═══════════════════════════════════════════════════════ */
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  if (gameStarted && !panelOpen) {
+    updateRocket(dt);
+    updateAsteroids(dt);
+    updateParticles(dt);
+    checkCollisions();
+    checkPlanetProximity();
+    updateHUD();
+  }
+
+  // Planet rotation
+  planets.forEach((p, i) => { p.rotation.y += 0.001 * (1 + i * 0.3); });
+
+  // Camera follow
+  if (gameStarted) {
+    const targetCam = rocketGroup.position.clone().add(new THREE.Vector3(0, 6, 18));
+    camera.position.lerp(targetCam, 0.04);
+    camera.lookAt(rocketGroup.position.clone().add(new THREE.Vector3(0, 0, -20)));
+  }
+
+  renderer.render(scene, camera);
+}
+
+/* ── Rocket controls ── */
+function updateRocket(dt) {
+  const thrusting = (keys['w'] || keys['arrowup']);
+  const braking = (keys['s'] || keys['arrowdown']);
+  const left = (keys['a'] || keys['arrowleft']);
+  const right = (keys['d'] || keys['arrowright']);
+
+  if (thrusting && fuel > 0) {
+    rocketVel.z -= ROCKET_SPEED * dt * 60;
+    fuel = Math.max(0, fuel - dt * 3);
+    // Engine effects
+    rocketGroup.userData.engineGlow.visible = true;
+    rocketGroup.userData.eLight.intensity = 2 + Math.random();
+    if (Math.random() > 0.3) spawnEngineParticle();
+  } else {
+    rocketGroup.userData.engineGlow.visible = false;
+    rocketGroup.userData.eLight.intensity = 0.3;
+  }
+
+  if (braking) {
+    rocketVel.multiplyScalar(Math.pow(BRAKE_FACTOR, dt * 60));
+  }
+
+  if (left) {
+    rocketVel.x -= STEER_SPEED * dt * 60;
+    rocketGroup.rotation.z = THREE.MathUtils.lerp(rocketGroup.rotation.z, 0.3, 0.05);
+  } else if (right) {
+    rocketVel.x += STEER_SPEED * dt * 60;
+    rocketGroup.rotation.z = THREE.MathUtils.lerp(rocketGroup.rotation.z, -0.3, 0.05);
+  } else {
+    rocketGroup.rotation.z = THREE.MathUtils.lerp(rocketGroup.rotation.z, 0, 0.05);
+  }
+
+  // Damping
+  rocketVel.x *= 0.97;
+  rocketVel.y *= 0.97;
+  rocketVel.z = Math.max(rocketVel.z, -3.5); // max speed
+
+  rocketGroup.position.add(rocketVel.clone().multiplyScalar(dt * 60));
+
+  // Keep in bounds
+  rocketGroup.position.x = THREE.MathUtils.clamp(rocketGroup.position.x, -80, 80);
+  rocketGroup.position.y = THREE.MathUtils.clamp(rocketGroup.position.y, -40, 40);
+
+  // Fuel regen (slow)
+  if (!thrusting) fuel = Math.min(100, fuel + dt * 1.5);
+
+  // Score from distance
+  score = Math.max(score, Math.floor(Math.abs(rocketGroup.position.z) * 0.5));
+}
+
+/* ── Asteroids ── */
+function updateAsteroids(dt) {
+  asteroids.forEach(a => {
+    a.rotation.x += a.userData.rotSpeed.x;
+    a.rotation.y += a.userData.rotSpeed.y;
+    // Recycle far-away asteroids
+    if (a.position.z > rocketGroup.position.z + 60) {
+      resetAsteroid(a, false);
+    }
+  });
+}
+
+/* ── Engine particles ── */
+function updateParticles(dt) {
+  for (let i = engineParticles.length - 1; i >= 0; i--) {
+    const p = engineParticles[i];
+    p.userData.life -= dt;
+    p.position.add(p.userData.vel.clone().multiplyScalar(dt));
+    p.material.opacity = Math.max(0, p.userData.life / 1.0);
+    p.scale.multiplyScalar(0.97);
+    if (p.userData.life <= 0) {
+      scene.remove(p);
+      p.geometry.dispose();
+      p.material.dispose();
+      engineParticles.splice(i, 1);
+    }
+  }
+}
+
+/* ── Collision detection ── */
+function checkCollisions() {
+  const rPos = rocketGroup.position;
+  asteroids.forEach(a => {
+    const dist = rPos.distanceTo(a.position);
+    const hitRadius = 2 + a.scale.x;
+    if (dist < hitRadius) {
+      // Hit!
+      shield = Math.max(0, shield - 8);
+      showWarning();
+      showNotif('ASTEROID HIT! Shield: ' + Math.round(shield) + '%');
+      // Bounce asteroid away
+      a.position.add(a.position.clone().sub(rPos).normalize().multiplyScalar(8));
+      // Slow down
+      rocketVel.multiplyScalar(0.7);
+    }
+  });
+  // Shield regen
+  shield = Math.min(100, shield + 0.02);
+}
+
+/* ── Planet proximity ── */
+function checkPlanetProximity() {
+  const rPos = rocketGroup.position;
+  planets.forEach((p, i) => {
+    const dist = rPos.distanceTo(p.position);
+    const r = 12 + i * 3;
+    const orbitDist = r + 20;
+
+    if (dist < orbitDist) {
+      document.getElementById('planetTxt').textContent = PLANET_DATA[i].name;
+
+      if (dist < orbitDist && keys[' ']) {
+        openPlanetPanel(i);
+      }
+
+      if (!visitedPlanets.has(i) && dist < orbitDist + 30) {
+        showNotif('Approaching ' + PLANET_DATA[i].name + ' — Press SPACE to land');
+      }
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   UI
+═══════════════════════════════════════════════════════ */
+function updateHUD() {
+  document.getElementById('fuelBar').style.width = fuel + '%';
+  document.getElementById('shieldBar').style.width = shield + '%';
+  document.getElementById('scoreTxt').textContent = 'XP ' + score;
+  document.getElementById('speedTxt').textContent = 'SPEED ' + Math.abs(Math.round(rocketVel.z * 100));
+}
+
+function showNotif(msg) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.add('show');
+  clearTimeout(n._t);
+  n._t = setTimeout(() => n.classList.remove('show'), 2500);
+}
+
+function showWarning() {
+  const w = document.getElementById('warning');
+  w.classList.add('flash');
+  setTimeout(() => w.classList.remove('flash'), 200);
+}
+
+function openPlanetPanel(idx) {
+  if (panelOpen) return;
+  panelOpen = true;
+  const pd = PLANET_DATA[idx];
+  document.getElementById('panel-title').textContent = pd.name;
+  document.getElementById('panel-subtitle').textContent = pd.subtitle;
+  document.getElementById('panel-content').innerHTML = pd.content;
+  document.getElementById('planet-panel').classList.add('show');
+
+  if (!visitedPlanets.has(idx)) {
+    visitedPlanets.add(idx);
+    score += 500;
+    showNotif('PLANET DISCOVERED! +500 XP');
+  }
+  keys = {};
+}
+
+function closePanel() {
+  panelOpen = false;
+  document.getElementById('planet-panel').classList.remove('show');
+
+  if (visitedPlanets.size === 4) {
+    setTimeout(() => showNotif('ALL PLANETS EXPLORED! You have seen the full portfolio.'), 600);
+  }
+}
+
+/* ── Start game ── */
+function startGame() {
+  const overlay = document.getElementById('intro-overlay');
+  overlay.style.opacity = '0';
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    document.getElementById('hud').classList.add('show');
+    gameStarted = true;
+    showNotif('LAUNCHED! Fly towards the planets...');
+  }, 1000);
+}
+
+function onResize() {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+}
+
+// Initialize
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Chaitanya — Portfolio Quest</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@500;700;900&display=swap');
+
+/* ── Core tokens ───────────────────────────── */
+:root {
+  --bg:#060918; --panel:#0c1029; --panel2:#111638;
+  --border:#1a2555; --accent:#00e5ff; --gold:#ffd740;
+  --green:#00ff87; --red:#ff3d71; --purple:#b47aff;
+  --pink:#ff6bca; --orange:#ff9f43; --text:#c5cfe0;
+  --dim:#4a5a7a; --white:#eef2ff;
+  --glow:0 0 30px rgba(0,229,255,.35);
+  --glow-g:0 0 30px rgba(0,255,135,.35);
+  --glow-p:0 0 30px rgba(180,122,255,.35);
+  --glow-gold:0 0 30px rgba(255,215,64,.45);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+/* ── Particles canvas ── */
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ── CRT scanlines ── */
+body::after{
+  content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);
+}
+
+/* ══════════════════════════════════════════════
+   BOOT SEQUENCE
+══════════════════════════════════════════════ */
+#boot{
+  position:fixed;inset:0;z-index:2000;background:#000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;
+}
+#boot-log{
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--green);
+  max-width:520px;width:90%;line-height:1.9;white-space:pre-wrap;min-height:180px;
+}
+#boot-bar-wrap{
+  width:min(420px,80%);height:8px;background:#111;border:1px solid var(--green);border-radius:4px;overflow:hidden;
+}
+#boot-bar{height:100%;width:0;background:var(--green);border-radius:4px;transition:width .3s}
+#boot-start{
+  font-family:'Press Start 2P',monospace;font-size:.65rem;padding:.9rem 2rem;
+  background:transparent;color:var(--gold);border:2px solid var(--gold);cursor:pointer;
+  letter-spacing:1px;opacity:0;transition:opacity .5s,background .2s,color .2s;
+}
+#boot-start:hover{background:var(--gold);color:#000;box-shadow:var(--glow-gold)}
+#boot-start.show{opacity:1;animation:pulse-glow 1.6s ease-in-out infinite}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 8px rgba(255,215,64,.3)}50%{box-shadow:0 0 28px rgba(255,215,64,.7)}}
+
+/* ══════════════════════════════════════════════
+   MAIN APP
+══════════════════════════════════════════════ */
+#app{position:relative;z-index:1;display:none;flex-direction:column}
+
+/* ── HUD ── */
+#hud{
+  position:sticky;top:0;z-index:100;height:54px;
+  background:rgba(6,9,24,.92);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 1.8rem;
+}
+.hud-left{display:flex;align-items:center;gap:1rem}
+.hud-name{
+  font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:700;
+  color:var(--accent);letter-spacing:2px;
+}
+.hud-hp{display:flex;align-items:center;gap:.5rem;font-size:.6rem;color:var(--red)}
+.hp-bar-bg{width:90px;height:6px;background:#1a1230;border-radius:3px;overflow:hidden}
+.hp-bar{height:100%;background:linear-gradient(90deg,var(--red),#ff6090);border-radius:3px;width:100%}
+.hud-nav{list-style:none;display:flex;gap:.1rem}
+.hud-nav a{
+  font-family:'Orbitron',sans-serif;font-size:.55rem;font-weight:500;
+  color:var(--dim);text-decoration:none;padding:.45rem .85rem;
+  border:1px solid transparent;border-radius:4px;letter-spacing:1.5px;
+  transition:all .25s;position:relative;
+}
+.hud-nav a:hover,.hud-nav a.active{
+  color:var(--accent);border-color:rgba(0,229,255,.4);
+  background:rgba(0,229,255,.06);text-shadow:var(--glow);
+}
+.hud-right{display:flex;align-items:center;gap:1rem}
+.hud-xp{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--gold);display:flex;align-items:center;gap:.5rem}
+.xp-ring{
+  width:32px;height:32px;border-radius:50%;position:relative;
+  display:flex;align-items:center;justify-content:center;
+}
+.xp-ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.xp-ring .xp-num{font-size:.5rem;color:var(--gold);font-weight:700;z-index:1}
+.hud-lvl{
+  font-family:'Press Start 2P',monospace;font-size:.5rem;
+  color:var(--gold);background:rgba(255,215,64,.1);border:1px solid rgba(255,215,64,.3);
+  padding:.25rem .55rem;border-radius:4px;
+}
+
+/* ══════════════════════════════════════════════
+   HERO — GAME SELECT SCREEN
+══════════════════════════════════════════════ */
+#hero{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 30%,#0e1540 0%,var(--bg) 70%);
+  position:relative;overflow:hidden;
+}
+#hero::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(180,122,255,.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0,229,255,.06) 0%, transparent 50%);
+}
+.hero-grid{
+  max-width:1200px;width:100%;padding:4rem 2rem;
+  display:grid;grid-template-columns:380px 1fr;gap:3rem;align-items:center;
+  position:relative;z-index:1;
+}
+@media(max-width:850px){.hero-grid{grid-template-columns:1fr;justify-items:center;text-align:center}}
+
+/* Character card */
+.char-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:16px;
+  padding:2rem;display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  position:relative;overflow:hidden;
+}
+.char-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent),var(--purple),var(--pink));
+}
+.char-card::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 0%, rgba(0,229,255,.04) 0%, transparent 60%);
+  pointer-events:none;
+}
+/* Pixel avatar */
+.pixel-avatar{
+  width:140px;height:140px;position:relative;
+  image-rendering:pixelated;
+}
+.pixel-avatar canvas{width:100%;height:100%;image-rendering:pixelated}
+.avatar-glow{
+  position:absolute;inset:-20px;
+  background:radial-gradient(circle,rgba(0,229,255,.15) 0%,transparent 70%);
+  animation:breathe 3s ease-in-out infinite;pointer-events:none;
+}
+@keyframes breathe{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.15);opacity:1}}
+.char-title{
+  font-family:'Orbitron',sans-serif;font-size:.85rem;font-weight:900;
+  color:var(--white);text-align:center;letter-spacing:1px;line-height:1.7;
+}
+.char-class-badge{
+  font-family:'Press Start 2P',monospace;font-size:.45rem;
+  color:var(--accent);background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.25);
+  padding:.35rem .8rem;border-radius:6px;letter-spacing:1px;
+}
+
+/* Radar chart */
+.radar-wrap{width:100%;max-width:260px;aspect-ratio:1;position:relative}
+.radar-wrap canvas{width:100%!important;height:100%!important}
+
+/* Stat numbers */
+.stat-numbers{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.stat-num-item{
+  display:flex;align-items:center;gap:.6rem;
+  padding:.4rem .6rem;border-radius:6px;
+  background:rgba(255,255,255,.02);
+}
+.stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.stat-num-label{font-size:.62rem;color:var(--dim);flex:1}
+.stat-num-val{font-family:'Orbitron',sans-serif;font-size:.7rem;font-weight:700;color:var(--white)}
+
+/* Hero right */
+.hero-right{display:flex;flex-direction:column;gap:1.8rem}
+.hero-tag{
+  font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--green);
+  letter-spacing:4px;text-transform:uppercase;
+}
+.hero-title{
+  font-family:'Orbitron',sans-serif;font-size:clamp(1.5rem,4vw,2.4rem);
+  font-weight:900;color:var(--white);line-height:1.4;
+}
+.hero-title em{font-style:normal;color:var(--accent);text-shadow:var(--glow)}
+.hero-bio{
+  font-size:.88rem;color:var(--text);line-height:1.9;
+  padding:1.2rem;border-left:3px solid var(--accent);
+  background:linear-gradient(90deg,rgba(0,229,255,.04),transparent);
+  border-radius:0 8px 8px 0;
+}
+.trait-grid{display:flex;flex-wrap:wrap;gap:.5rem}
+.trait{
+  font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;
+  padding:.35rem .8rem;border-radius:6px;letter-spacing:.5px;
+  display:flex;align-items:center;gap:.4rem;
+}
+.trait i{font-style:normal;font-size:.75rem}
+.t-cyan{background:rgba(0,229,255,.08);color:var(--accent);border:1px solid rgba(0,229,255,.2)}
+.t-green{background:rgba(0,255,135,.08);color:var(--green);border:1px solid rgba(0,255,135,.2)}
+.t-gold{background:rgba(255,215,64,.08);color:var(--gold);border:1px solid rgba(255,215,64,.2)}
+.t-purple{background:rgba(180,122,255,.08);color:var(--purple);border:1px solid rgba(180,122,255,.2)}
+.t-pink{background:rgba(255,107,202,.08);color:var(--pink);border:1px solid rgba(255,107,202,.2)}
+.t-orange{background:rgba(255,159,67,.08);color:var(--orange);border:1px solid rgba(255,159,67,.2)}
+
+/* ══════════════════════════════════════════════
+   ZONE HEADERS
+══════════════════════════════════════════════ */
+.zone{max-width:1200px;margin:0 auto;padding:5rem 2rem}
+.zone-head{display:flex;align-items:center;gap:1.2rem;margin-bottom:3rem}
+.zone-icon-box{
+  width:52px;height:52px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;flex-shrink:0;
+  border:1px solid;position:relative;overflow:hidden;
+}
+.zone-icon-box::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 0%,rgba(255,255,255,.08),transparent 70%);
+}
+.z-green{background:rgba(0,255,135,.06);border-color:rgba(0,255,135,.25);color:var(--green)}
+.z-purple{background:rgba(180,122,255,.06);border-color:rgba(180,122,255,.25);color:var(--purple)}
+.z-gold{background:rgba(255,215,64,.06);border-color:rgba(255,215,64,.25);color:var(--gold)}
+.z-cyan{background:rgba(0,229,255,.06);border-color:rgba(0,229,255,.25);color:var(--accent)}
+.zone-titles{flex:1}
+.zone-sub{font-family:'Orbitron',sans-serif;font-size:.5rem;letter-spacing:4px;color:var(--dim);margin-bottom:.3rem}
+.zone-h{font-family:'Orbitron',sans-serif;font-size:clamp(.9rem,2.5vw,1.3rem);font-weight:900;color:var(--white)}
+.zone-line{flex:1;height:1px;opacity:.3}
+.zone-line.gl{background:linear-gradient(90deg,var(--green),transparent)}
+.zone-line.pl{background:linear-gradient(90deg,var(--purple),transparent)}
+.zone-line.gol{background:linear-gradient(90deg,var(--gold),transparent)}
+.zone-line.cl{background:linear-gradient(90deg,var(--accent),transparent)}
+
+/* ══════════════════════════════════════════════
+   QUEST LOG — PROJECTS
+══════════════════════════════════════════════ */
+#quests{background:#07091a;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.quest-list{display:flex;flex-direction:column;gap:1.2rem}
+.quest{
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  display:grid;grid-template-columns:60px 1fr auto;gap:1.2rem;
+  padding:1.6rem;transition:all .35s;cursor:default;position:relative;overflow:hidden;
+}
+.quest::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(0,255,135,.02),transparent);
+  opacity:0;transition:opacity .35s;
+}
+.quest:hover{border-color:var(--green);box-shadow:var(--glow-g);transform:translateX(8px)}
+.quest:hover::before{opacity:1}
+.quest-badge{
+  width:56px;height:56px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:1.6rem;
+  flex-shrink:0;position:relative;
+}
+.qb-done{background:rgba(0,255,135,.08);border:1px solid rgba(0,255,135,.25)}
+.qb-epic{background:rgba(180,122,255,.08);border:1px solid rgba(180,122,255,.25)}
+.quest-body h3{
+  font-family:'Orbitron',sans-serif;font-size:.78rem;font-weight:700;
+  color:var(--white);margin-bottom:.5rem;letter-spacing:1px;
+}
+.quest-body p{font-size:.84rem;color:var(--text);line-height:1.75;margin-bottom:.8rem}
+.qtags{display:flex;flex-wrap:wrap;gap:.35rem}
+.qtag{
+  font-size:.6rem;font-weight:600;padding:.2rem .55rem;border-radius:4px;
+  background:rgba(0,229,255,.07);color:var(--accent);
+  border:1px solid rgba(0,229,255,.18);letter-spacing:.5px;
+}
+.quest-rewards{display:flex;flex-direction:column;align-items:flex-end;gap:.5rem;flex-shrink:0}
+.qr-status{
+  font-family:'Press Start 2P',monospace;font-size:.4rem;
+  padding:.35rem .7rem;border-radius:4px;white-space:nowrap;
+}
+.qrs-done{background:rgba(0,255,135,.12);color:var(--green);border:1px solid rgba(0,255,135,.3)}
+.qrs-epic{background:rgba(180,122,255,.12);color:var(--purple);border:1px solid rgba(180,122,255,.3)}
+.qr-xp{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--gold)}
+.qr-stat{font-size:.58rem;color:var(--accent)}
+@media(max-width:700px){.quest{grid-template-columns:1fr}.quest-rewards{align-items:flex-start;flex-direction:row;flex-wrap:wrap}}
+
+/* ══════════════════════════════════════════════
+   SKILL TREE — COURSES
+══════════════════════════════════════════════ */
+#skills{background:var(--bg)}
+.skill-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;
+  position:relative;
+}
+.skill-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:1.4rem;position:relative;overflow:hidden;transition:all .35s;cursor:default;
+}
+.skill-card::after{
+  content:'✓ UNLOCKED';position:absolute;top:.8rem;right:.8rem;
+  font-family:'Press Start 2P',monospace;font-size:.35rem;color:var(--green);
+  letter-spacing:.5px;opacity:.7;
+}
+.skill-card:hover{
+  border-color:var(--purple);box-shadow:var(--glow-p);transform:translateY(-5px) scale(1.01);
+}
+.sk-icon{font-size:2rem;margin-bottom:.7rem;display:block;filter:drop-shadow(0 0 8px rgba(180,122,255,.4))}
+.sk-name{
+  font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:700;
+  color:var(--white);margin-bottom:.35rem;letter-spacing:1px;
+}
+.sk-desc{font-size:.78rem;color:var(--dim);line-height:1.65;margin-bottom:.8rem}
+.sk-pips{display:flex;gap:4px}
+.pip{width:10px;height:10px;border-radius:3px;background:var(--border);transition:background .3s}
+.pip.on{background:var(--purple);box-shadow:0 0 8px var(--purple)}
+.sk-meta{
+  font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);
+  letter-spacing:1.5px;margin-top:.5rem;
+}
+
+/* ══════════════════════════════════════════════
+   CHARACTER SHEET — RESUME
+══════════════════════════════════════════════ */
+#sheet{background:#07091a;border-top:1px solid var(--border)}
+.sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:750px){.sheet-grid{grid-template-columns:1fr}}
+.sheet-panel{
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:1.6rem;position:relative;overflow:hidden;
+}
+.sheet-panel::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.4;
+}
+.sp-head{
+  font-family:'Press Start 2P',monospace;font-size:.5rem;color:var(--accent);
+  letter-spacing:2px;margin-bottom:1.3rem;padding-bottom:.8rem;
+  border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.6rem;
+}
+.sp-entry{margin-bottom:1.2rem}
+.sp-entry:last-child{margin-bottom:0}
+.sp-entry strong{
+  font-family:'JetBrains Mono',monospace;font-size:.82rem;
+  color:var(--white);display:block;margin-bottom:.2rem;
+}
+.sp-entry .meta{
+  font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:500;
+  color:var(--accent);margin-bottom:.3rem;letter-spacing:.5px;
+}
+.sp-entry p{font-size:.82rem;color:var(--dim);line-height:1.65}
+
+/* Inventory pills */
+.inv-section{margin-bottom:1rem}
+.inv-section:last-child{margin-bottom:0}
+.inv-section strong{font-size:.72rem;color:var(--white);margin-bottom:.4rem;display:block}
+.inv-wrap{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.4rem}
+.inv{
+  font-size:.62rem;font-weight:600;padding:.28rem .65rem;
+  border-radius:4px;letter-spacing:.5px;display:flex;align-items:center;gap:.3rem;
+}
+.inv::before{content:'◆';font-size:.45rem}
+.inv-l{background:rgba(0,229,255,.08);color:var(--accent);border:1px solid rgba(0,229,255,.2)}
+.inv-f{background:rgba(0,255,135,.08);color:var(--green);border:1px solid rgba(0,255,135,.2)}
+.inv-t{background:rgba(180,122,255,.08);color:var(--purple);border:1px solid rgba(180,122,255,.2)}
+
+/* Contact / comms */
+.comms{list-style:none}
+.comms li{
+  font-size:.78rem;color:var(--text);padding:.6rem 0;
+  border-bottom:1px solid rgba(26,37,85,.5);display:flex;align-items:center;gap:.7rem;
+}
+.comms li:last-child{border-bottom:none}
+.comms .cl{
+  font-family:'Orbitron',sans-serif;font-size:.55rem;font-weight:700;
+  color:var(--accent);width:65px;flex-shrink:0;letter-spacing:1px;
+}
+.status-dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--green);box-shadow:0 0 8px var(--green);
+  animation:blink-dot 2s ease-in-out infinite;margin-right:.4rem;
+}
+@keyframes blink-dot{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Achievement toasts */
+.achievement-toast{
+  position:fixed;top:80px;right:20px;z-index:500;
+  background:var(--panel2);border:1px solid var(--gold);border-radius:10px;
+  padding:1rem 1.4rem;display:flex;align-items:center;gap:1rem;
+  box-shadow:var(--glow-gold);
+  transform:translateX(400px);opacity:0;
+  transition:transform .5s cubic-bezier(.34,1.56,.64,1),opacity .5s;
+}
+.achievement-toast.show{transform:translateX(0);opacity:1}
+.ach-icon{font-size:1.8rem}
+.ach-text{display:flex;flex-direction:column;gap:.2rem}
+.ach-label{font-family:'Press Start 2P',monospace;font-size:.4rem;color:var(--gold);letter-spacing:2px}
+.ach-name{font-family:'Orbitron',sans-serif;font-size:.75rem;color:var(--white);font-weight:700}
+
+/* ── Footer ── */
+footer{
+  background:#040612;border-top:1px solid var(--border);
+  text-align:center;padding:2.5rem 1rem;
+}
+footer p{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--dim);letter-spacing:1px}
+footer span{color:var(--accent)}
+
+/* ── Scroll reveal ── */
+.rv{opacity:0;transform:translateY(35px);transition:opacity .7s ease,transform .7s ease}
+.rv.vis{opacity:1;transform:translateY(0)}
+
+/* ── Typing cursor ── */
+.typed-cursor{animation:blink .8s step-end infinite;color:var(--accent)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+@media(max-width:600px){
+  #hud{padding:0 .8rem}
+  .hud-nav a{padding:.3rem .4rem;font-size:.5rem;letter-spacing:.5px}
+  .zone{padding:3.5rem 1rem}
+}
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<!-- ═══════ BOOT SEQUENCE ═══════ -->
+<div id="boot">
+  <div id="boot-log"></div>
+  <div id="boot-bar-wrap"><div id="boot-bar"></div></div>
+  <button id="boot-start" onclick="enterGame()">▶ ENTER THE GAME</button>
+</div>
+
+<!-- ═══════ ACHIEVEMENT TOAST ═══════ -->
+<div class="achievement-toast" id="achToast">
+  <span class="ach-icon" id="achIcon">🏆</span>
+  <div class="ach-text">
+    <span class="ach-label">ACHIEVEMENT UNLOCKED</span>
+    <span class="ach-name" id="achName">Welcome, Adventurer</span>
+  </div>
+</div>
+
+<!-- ═══════ MAIN APP ═══════ -->
+<div id="app">
+
+<!-- HUD -->
+<nav id="hud">
+  <div class="hud-left">
+    <span class="hud-name">A.L.V.CHAITANYA</span>
+    <div class="hud-hp">
+      <span>HP</span>
+      <div class="hp-bar-bg"><div class="hp-bar"></div></div>
+    </div>
+  </div>
+  <ul class="hud-nav">
+    <li><a href="#hero" class="active">PROFILE</a></li>
+    <li><a href="#quests">QUESTS</a></li>
+    <li><a href="#skills">SKILLS</a></li>
+    <li><a href="#sheet">SHEET</a></li>
+  </ul>
+  <div class="hud-right">
+    <div class="xp-ring">
+      <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="none" stroke="#1a2555" stroke-width="2.5"/>
+        <circle id="xpArc" cx="18" cy="18" r="16" fill="none" stroke="#ffd740" stroke-width="2.5"
+          stroke-dasharray="0 100" stroke-linecap="round"/></svg>
+      <span class="xp-num" id="xpNum">0</span>
+    </div>
+    <span class="hud-lvl">LV 1</span>
+  </div>
+</nav>
+
+<!-- ═══════ HERO ═══════════════════════════════════ -->
+<section id="hero">
+  <div class="hero-grid">
+
+    <div class="char-card rv">
+      <div class="pixel-avatar">
+        <div class="avatar-glow"></div>
+        <canvas id="avatarCanvas" width="16" height="16"></canvas>
+      </div>
+      <h2 class="char-title">AVULA LAKSHMI<br>VENKATA CHAITANYA</h2>
+      <div class="char-class-badge">[ CSE ENGINEER · VIT VELLORE · 2025-2029 ]</div>
+
+      <div class="radar-wrap"><canvas id="radar"></canvas></div>
+
+      <div class="stat-numbers">
+        <div class="stat-num-item"><div class="stat-dot" style="background:var(--accent)"></div><span class="stat-num-label">Coding</span><span class="stat-num-val" data-count="85">0</span></div>
+        <div class="stat-num-item"><div class="stat-dot" style="background:var(--green)"></div><span class="stat-num-label">Logic</span><span class="stat-num-val" data-count="90">0</span></div>
+        <div class="stat-num-item"><div class="stat-dot" style="background:var(--purple)"></div><span class="stat-num-label">AI/ML</span><span class="stat-num-val" data-count="78">0</span></div>
+        <div class="stat-num-item"><div class="stat-dot" style="background:var(--gold)"></div><span class="stat-num-label">Web Dev</span><span class="stat-num-val" data-count="80">0</span></div>
+        <div class="stat-num-item"><div class="stat-dot" style="background:var(--pink)"></div><span class="stat-num-label">Team</span><span class="stat-num-val" data-count="92">0</span></div>
+        <div class="stat-num-item"><div class="stat-dot" style="background:var(--orange)"></div><span class="stat-num-label">Learn</span><span class="stat-num-val" data-count="95">0</span></div>
+      </div>
+    </div>
+
+    <div class="hero-right rv">
+      <p class="hero-tag">// Player One — Ready</p>
+      <h1 class="hero-title">WELCOME TO MY<br><em>PORTFOLIO QUEST</em></h1>
+      <p class="hero-bio">
+        First-year Computer Science undergrad at VIT Vellore (2025–2029), wired to turn
+        ideas into code. I scored <strong style="color:var(--gold)">100/100 in AI</strong> in boards and I chase the same
+        precision in every project — from face recognition systems to full-stack apps.
+        Each line of code is an XP point, every project a quest completed, and every bug
+        squashed is a boss defeated. Let's play.
+      </p>
+      <div class="trait-grid">
+        <span class="trait t-cyan"><i>⚡</i> Full-Stack Dev</span>
+        <span class="trait t-green"><i>🧠</i> Machine Learning</span>
+        <span class="trait t-gold"><i>📊</i> DSA & Algorithms</span>
+        <span class="trait t-purple"><i>🐍</i> Python · Java · C++</span>
+        <span class="trait t-pink"><i>🎯</i> Problem Solver</span>
+        <span class="trait t-orange"><i>🔥</i> Quick Learner</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════ QUESTS (Projects) ═════════════════════ -->
+<section id="quests">
+<div class="zone">
+  <div class="zone-head rv">
+    <div class="zone-icon-box z-green">📜</div>
+    <div class="zone-titles"><p class="zone-sub">CHAPTER 02</p><h2 class="zone-h">QUEST LOG — PROJECTS</h2></div>
+    <div class="zone-line gl"></div>
+  </div>
+
+  <div class="quest-list">
+
+    <div class="quest rv">
+      <div class="quest-badge qb-done">🎯</div>
+      <div class="quest-body">
+        <h3>OPERATION: FACE SHIELD</h3>
+        <p>Built a real-time attendance system powered by face recognition. Uses a live webcam feed to identify students and auto-logs attendance to CSV — zero proxy, zero manual roll-call.</p>
+        <div class="qtags">
+          <span class="qtag">Python</span><span class="qtag">OpenCV</span>
+          <span class="qtag">face_recognition</span><span class="qtag">NumPy</span>
+        </div>
+      </div>
+      <div class="quest-rewards">
+        <span class="qr-status qrs-done">✓ COMPLETE</span>
+        <span class="qr-xp">+250 XP</span>
+        <span class="qr-stat">~96% Accuracy</span>
+      </div>
+    </div>
+
+    <div class="quest rv">
+      <div class="quest-badge qb-epic">🛒</div>
+      <div class="quest-body">
+        <h3>PROJECT: NEXUS MARKET</h3>
+        <p>Engineered a full-stack e-commerce platform — JWT authentication, product catalogue, cart, checkout, and order management. React frontend, Express/Node backend, MongoDB persistence.</p>
+        <div class="qtags">
+          <span class="qtag">React</span><span class="qtag">Node.js</span>
+          <span class="qtag">Express</span><span class="qtag">MongoDB</span><span class="qtag">JWT</span>
+        </div>
+      </div>
+      <div class="quest-rewards">
+        <span class="qr-status qrs-epic">★ EPIC</span>
+        <span class="qr-xp">+350 XP</span>
+        <span class="qr-stat">Full CRUD Deployed</span>
+      </div>
+    </div>
+
+    <div class="quest rv">
+      <div class="quest-badge qb-epic">🧠</div>
+      <div class="quest-body">
+        <h3>MISSION: MIND READER</h3>
+        <p>Trained LSTM and Logistic Regression classifiers on Twitter data to predict sentiment. Data pipeline with Tweepy, NLP preprocessing with NLTK, visual storytelling with Matplotlib word clouds.</p>
+        <div class="qtags">
+          <span class="qtag">Python</span><span class="qtag">NLTK</span>
+          <span class="qtag">TensorFlow</span><span class="qtag">Tweepy</span><span class="qtag">Matplotlib</span>
+        </div>
+      </div>
+      <div class="quest-rewards">
+        <span class="qr-status qrs-epic">★ EPIC</span>
+        <span class="qr-xp">+350 XP</span>
+        <span class="qr-stat">88% Accuracy</span>
+      </div>
+    </div>
+
+    <div class="quest rv">
+      <div class="quest-badge qb-done">⚙️</div>
+      <div class="quest-body">
+        <h3>CODEX: ARENA JUDGE</h3>
+        <p>A miniature competitive programming judge — accepts Python, C++ and Java submissions, sandboxes them in Docker containers, and returns verdicts within time limits. Built LeetCode, from scratch.</p>
+        <div class="qtags">
+          <span class="qtag">Flask</span><span class="qtag">Docker</span>
+          <span class="qtag">PostgreSQL</span><span class="qtag">C++</span><span class="qtag">Python</span>
+        </div>
+      </div>
+      <div class="quest-rewards">
+        <span class="qr-status qrs-done">✓ COMPLETE</span>
+        <span class="qr-xp">+400 XP</span>
+        <span class="qr-stat">Multi-Lang Sandbox</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+</section>
+
+<!-- ═══════ SKILL TREE (Courses) ══════════════════ -->
+<section id="skills">
+<div class="zone">
+  <div class="zone-head rv">
+    <div class="zone-icon-box z-purple">🌳</div>
+    <div class="zone-titles"><p class="zone-sub">CHAPTER 03</p><h2 class="zone-h">SKILL TREE — COURSES</h2></div>
+    <div class="zone-line pl"></div>
+  </div>
+
+  <div class="skill-grid">
+    <div class="skill-card rv"><span class="sk-icon">📊</span><div class="sk-name">DATA STRUCTURES & ALGO</div><div class="sk-desc">Arrays, trees, graphs, DP — the backbone of competitive coding and interviews.</div><div class="sk-pips"><div class="pip on"></div><div class="pip on"></div><div class="pip on"></div><div class="pip on"></div><div class="pip"></div></div><div class="sk-meta">VIT VELLORE · CORE</div></div>
+    <div class="skill-card rv"><span class="sk-icon">🤖</span><div class="sk-name">MACHINE LEARNING</div><div class="sk-desc">Regression, classification, SVM, decision trees, neural networks, model evaluation.</div><div class="sk-pips"><div class="pip on"></div><div class="pip on"></div><div class="pip on"></div><div class="pip"></div><div class="pip"></div></div><div class="sk-meta">VIT VELLORE · CORE ELECTIVE</div></div>
+    <div class="skill-card rv"><span class="sk-icon">🔒</span><div class="sk-name">COMPUTER NETWORKS</div><div class="sk-desc">OSI & TCP/IP, routing, sockets, HTTP, DNS, and network security.</div><div class="sk-pips"><div class="pip on"></div><div class="pip on"></div><div class="pip on"></div><div class="pip on"></div><div class="pip"></div></div><div class="sk-meta">VIT VELLORE · CORE</div></div>
+    <div class="skill-card rv"><span class="sk-icon">💾</span><div class="sk-name">DATABASE MANAGEMENT</div><div class="sk-desc">SQL, relational algebra, normalisation, transactions, and NoSQL intro.</div><div class="sk-pips"><div class="pip on"></div><div class="pip on"></div><div class="pip on"></div><div class="pip on"></div><div class="pip"></div></div><div class="sk-meta">VIT VELLORE · CORE</div></div>
+    <div class="skill-card rv"><span class="sk-icon">💻</span><div class="sk-name">OPERATING SYSTEMS</div><div class="sk-desc">Scheduling, memory management, file systems, deadlocks, synchronisation.</div><div class="sk-pips"><div class="pip on"></div><div class="pip on"></div><div class="pip on"></div><div class="pip"></div><div class="pip"></div></div><div class="sk-meta">VIT VELLORE · CORE</div></div>
+    <div class="skill-card rv"><span class="sk-icon">⚙️</span><div class="sk-name">OOP</div><div class="sk-desc">Inheritance, polymorphism, design patterns, SOLID principles — Java & C++.</div><div class="sk-pips"><div class="pip on"></div><div class="pip on"></div><div class="pip on"></div><div class="pip on"></div><div class="pip"></div></div><div class="sk-meta">VIT VELLORE · CORE</div></div>
+    <div class="skill-card rv"><span class="sk-icon">📈</span><div class="sk-name">PROBABILITY & STATS</div><div class="sk-desc">Distributions, hypothesis testing, regression, Bayesian inference for ML.</div><div class="sk-pips"><div class="pip on"></div><div class="pip on"></div><div class="pip on"></div><div class="pip"></div><div class="pip"></div></div><div class="sk-meta">VIT VELLORE · CORE</div></div>
+    <div class="skill-card rv"><span class="sk-icon">☁️</span><div class="sk-name">CLOUD COMPUTING</div><div class="sk-desc">IaaS/PaaS/SaaS, AWS/Azure basics, Docker, and microservices.</div><div class="sk-pips"><div class="pip on"></div><div class="pip on"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div></div><div class="sk-meta">VIT VELLORE · ELECTIVE</div></div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════ CHARACTER SHEET (Resume) ══════════════ -->
+<section id="sheet">
+<div class="zone">
+  <div class="zone-head rv">
+    <div class="zone-icon-box z-gold">📋</div>
+    <div class="zone-titles"><p class="zone-sub">CHAPTER 04</p><h2 class="zone-h">CHARACTER SHEET — RESUME</h2></div>
+    <div class="zone-line gol"></div>
+  </div>
+
+  <div class="sheet-grid">
+
+    <!-- Education -->
+    <div class="sheet-panel rv">
+      <div class="sp-head">🎓 ORIGIN STORY</div>
+      <div class="sp-entry">
+        <strong>B.Tech — Computer Science & Engineering</strong>
+        <div class="meta">VIT Vellore · 2025 – 2029</div>
+        <p>Pursuing a full-time degree with focus on software engineering, machine learning, and distributed systems.</p>
+      </div>
+      <div class="sp-entry">
+        <strong>Class XII (CBSE)</strong>
+        <div class="meta">2024 – 2025 · PCM + Computer Science</div>
+        <p>Scored 85% overall. Achieved a perfect 100/100 in Artificial Intelligence.</p>
+      </div>
+      <div class="sp-entry">
+        <strong>Class X (CBSE)</strong>
+        <div class="meta">2022 – 2023</div>
+        <p>Scored 96%.</p>
+      </div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="sheet-panel rv">
+      <div class="sp-head">🏆 ACHIEVEMENTS UNLOCKED</div>
+      <div class="sp-entry">
+        <strong>Hackathon Finalist — VIT HackFusion 2025</strong>
+        <p>Built a health-tech prototype in 24 hours with React Native & Firebase. Reached top 10 finalists.</p>
+      </div>
+      <div class="sp-entry">
+        <strong>100/100 in Artificial Intelligence</strong>
+        <p>Perfect score in AI during Class XII board examinations — a rare and proud milestone.</p>
+      </div>
+      <div class="sp-entry">
+        <strong>Academic Excellence</strong>
+        <p>Consistently recognised for strong academic performance at VIT Vellore.</p>
+      </div>
+    </div>
+
+    <!-- Inventory -->
+    <div class="sheet-panel rv">
+      <div class="sp-head">🎒 INVENTORY</div>
+      <div class="inv-section">
+        <strong>Languages</strong>
+        <div class="inv-wrap">
+          <span class="inv inv-l">Python</span><span class="inv inv-l">Java</span>
+          <span class="inv inv-l">C++</span><span class="inv inv-l">JavaScript</span>
+          <span class="inv inv-l">SQL</span><span class="inv inv-l">Bash</span>
+        </div>
+      </div>
+      <div class="inv-section">
+        <strong>Frameworks</strong>
+        <div class="inv-wrap">
+          <span class="inv inv-f">React</span><span class="inv inv-f">Node.js</span>
+          <span class="inv inv-f">Express</span><span class="inv inv-f">Flask</span>
+          <span class="inv inv-f">TensorFlow</span><span class="inv inv-f">scikit-learn</span>
+          <span class="inv inv-f">OpenCV</span>
+        </div>
+      </div>
+      <div class="inv-section">
+        <strong>Tools</strong>
+        <div class="inv-wrap">
+          <span class="inv inv-t">Git</span><span class="inv inv-t">Docker</span>
+          <span class="inv inv-t">MongoDB</span><span class="inv inv-t">PostgreSQL</span>
+          <span class="inv inv-t">VS Code</span><span class="inv inv-t">Linux</span>
+          <span class="inv inv-t">Postman</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact -->
+    <div class="sheet-panel rv">
+      <div class="sp-head">📡 COMMS CHANNEL</div>
+      <ul class="comms">
+        <li><span class="cl">EMAIL</span> avula.lakshmi2025@vitstudent.ac.in</li>
+        <li><span class="cl">BASE</span> VIT Vellore, Tamil Nadu, India</li>
+        <li><span class="cl">STATUS</span> <span class="status-dot"></span>ONLINE — OPEN TO QUESTS</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+</section>
+
+<footer>
+  <p>&copy; 2026 · <span>Avula Lakshmi Venkata Chaitanya</span> · B.Tech CSE, VIT Vellore</p>
+</footer>
+
+</div><!-- #app -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   PARTICLE SYSTEM
+═══════════════════════════════════════════════ */
+(function(){
+  const c=document.getElementById('particles'),x=c.getContext('2d');
+  let w,h,pts=[];
+  function resize(){w=c.width=innerWidth;h=c.height=innerHeight;pts=[];
+    for(let i=0;i<90;i++)pts.push({x:Math.random()*w,y:Math.random()*h,
+      r:Math.random()*1.5+.3,dx:(Math.random()-.5)*.25,dy:(Math.random()-.5)*.25,
+      a:Math.random()*.5+.2,c:['#00e5ff','#b47aff','#ffd740','#00ff87'][Math.random()*4|0]});
+  }
+  function draw(){
+    x.clearRect(0,0,w,h);
+    pts.forEach(p=>{
+      p.x+=p.dx;p.y+=p.dy;
+      if(p.x<0)p.x=w;if(p.x>w)p.x=0;if(p.y<0)p.y=h;if(p.y>h)p.y=0;
+      x.beginPath();x.arc(p.x,p.y,p.r,0,Math.PI*2);
+      x.fillStyle=p.c;x.globalAlpha=p.a;x.fill();
+    });
+    // lines
+    x.globalAlpha=.04;x.strokeStyle='#00e5ff';x.lineWidth=.5;
+    for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+      const d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);
+      if(d<140){x.beginPath();x.moveTo(pts[i].x,pts[i].y);x.lineTo(pts[j].x,pts[j].y);x.stroke()}
+    }
+    x.globalAlpha=1;
+    requestAnimationFrame(draw);
+  }
+  resize();draw();addEventListener('resize',resize);
+})();
+
+/* ═══════════════════════════════════════════════
+   PIXEL AVATAR
+═══════════════════════════════════════════════ */
+(function(){
+  const cv=document.getElementById('avatarCanvas'),cx=cv.getContext('2d');
+  // 16x16 pixel art character
+  const sprite=[
+    '................',
+    '....00000000....',
+    '...0cccccccc0...',
+    '..0cccccccccc0..',
+    '..0cFFccccFFc0..',
+    '..0cFFccccFFc0..',
+    '..0ccccAAcccc0..',
+    '..0cccAAAAcc0..',
+    '...0cccccccc0...',
+    '....0BBB0BBB0....',
+    '...0BBBBBBBB0...',
+    '..0B0BBBBBB0B0..',
+    '..0..0BBBB0..0..',
+    '.....0DDDD0.....',
+    '....0D00D00D....',
+    '....00..00.0....',
+  ];
+  const colors={'0':'#1a2555','c':'#f5d6a8','F':'#00e5ff','A':'#ff6b9d','B':'#2e86c1','D':'#4a5a7a'};
+  for(let y=0;y<16;y++)for(let x=0;x<16;x++){
+    const ch=sprite[y]?.[x];
+    if(ch && ch!=='.' && ch!==' ' && colors[ch]){cx.fillStyle=colors[ch];cx.fillRect(x,y,1,1)}
+  }
+})();
+
+/* ═══════════════════════════════════════════════
+   RADAR CHART — Pure Canvas
+═══════════════════════════════════════════════ */
+function drawRadar(){
+  const cv=document.getElementById('radar'),cx=cv.getContext('2d');
+  const dpr=devicePixelRatio||1;
+  const rect=cv.getBoundingClientRect();
+  cv.width=rect.width*dpr;cv.height=rect.height*dpr;
+  cx.scale(dpr,dpr);
+  const W=rect.width,H=rect.height,cX=W/2,cY=H/2,R=Math.min(W,H)/2-24;
+  const labels=['Coding','Logic','AI/ML','Web Dev','Team','Learn'];
+  const vals=[85,90,78,80,92,95];
+  const n=labels.length;
+  const colors=['#00e5ff','#00ff87','#b47aff','#ffd740','#ff6bca','#ff9f43'];
+
+  function angle(i){return (Math.PI*2/n)*i - Math.PI/2}
+  function xy(i,r){return [cX+r*Math.cos(angle(i)),cY+r*Math.sin(angle(i))]}
+
+  // grid rings
+  for(let ring=1;ring<=5;ring++){
+    const r=R*ring/5;
+    cx.beginPath();
+    for(let i=0;i<n;i++){const[x,y]=xy(i,r);i===0?cx.moveTo(x,y):cx.lineTo(x,y)}
+    cx.closePath();cx.strokeStyle='rgba(26,37,85,.6)';cx.lineWidth=1;cx.stroke();
+  }
+  // spokes
+  for(let i=0;i<n;i++){
+    const[x,y]=xy(i,R);
+    cx.beginPath();cx.moveTo(cX,cY);cx.lineTo(x,y);
+    cx.strokeStyle='rgba(26,37,85,.4)';cx.lineWidth=1;cx.stroke();
+  }
+  // data fill
+  cx.beginPath();
+  vals.forEach((v,i)=>{const[x,y]=xy(i,R*v/100);i===0?cx.moveTo(x,y):cx.lineTo(x,y)});
+  cx.closePath();
+  cx.fillStyle='rgba(0,229,255,.12)';cx.fill();
+  cx.strokeStyle='rgba(0,229,255,.6)';cx.lineWidth=2;cx.stroke();
+  // dots + labels
+  vals.forEach((v,i)=>{
+    const[x,y]=xy(i,R*v/100);
+    cx.beginPath();cx.arc(x,y,4,0,Math.PI*2);cx.fillStyle=colors[i];cx.fill();
+    cx.shadowColor=colors[i];cx.shadowBlur=8;cx.fill();cx.shadowBlur=0;
+    // label
+    const[lx,ly]=xy(i,R+16);
+    cx.font='600 9px Orbitron,sans-serif';cx.fillStyle='#8899bb';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText(labels[i],lx,ly);
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   BOOT SEQUENCE
+═══════════════════════════════════════════════ */
+const bootLines=[
+  '> PORTFOLIO_OS v3.0 — INITIALIZING...',
+  '> Loading character data .......... OK',
+  '> Compiling quest log ............. OK',
+  '> Calibrating skill tree .......... OK',
+  '> Linking achievement system ...... OK',
+  '> Rendering particle engine ....... OK',
+  '> Building radar chart ............ OK',
+  '> Connecting comms channel ........ OK',
+  '',
+  '> ALL SYSTEMS NOMINAL.',
+  '> PLAYER: AVULA LAKSHMI VENKATA CHAITANYA',
+  '> CLASS:  CSE ENGINEER — VIT VELLORE',
+  '',
+  '> READY TO DEPLOY.'
+];
+(async function bootSeq(){
+  const log=document.getElementById('boot-log'),bar=document.getElementById('boot-bar');
+  for(let i=0;i<bootLines.length;i++){
+    log.textContent+=bootLines[i]+'\n';
+    bar.style.width=((i+1)/bootLines.length*100)+'%';
+    log.scrollTop=log.scrollHeight;
+    await new Promise(r=>setTimeout(r,140+Math.random()*100));
+  }
+  document.getElementById('boot-start').classList.add('show');
+})();
+
+function enterGame(){
+  const boot=document.getElementById('boot');
+  boot.style.transition='opacity .7s';boot.style.opacity='0';
+  setTimeout(()=>{
+    boot.style.display='none';
+    const app=document.getElementById('app');
+    app.style.display='flex';app.style.flexDirection='column';
+    setTimeout(()=>{
+      drawRadar();
+      animateCounters();
+      animateXP();
+      showAchievement('🎮','Welcome, Adventurer');
+      setTimeout(()=>showAchievement('🏅','Profile Loaded'),3500);
+    },400);
+  },700);
+}
+
+/* ═══════════════════════════════════════════════
+   STAT COUNTER ANIMATION
+═══════════════════════════════════════════════ */
+function animateCounters(){
+  document.querySelectorAll('[data-count]').forEach(el=>{
+    const target=+el.dataset.count;let cur=0;
+    const step=()=>{cur+=2;if(cur>target)cur=target;el.textContent=cur;if(cur<target)requestAnimationFrame(step)};
+    step();
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   XP RING
+═══════════════════════════════════════════════ */
+function animateXP(){
+  const arc=document.getElementById('xpArc'),num=document.getElementById('xpNum');
+  const target=74;let cur=0;
+  const step=()=>{cur+=1;if(cur>target)cur=target;
+    arc.setAttribute('stroke-dasharray',`${cur} ${100-cur}`);
+    num.textContent=cur;
+    if(cur<target)requestAnimationFrame(step);
+  };
+  step();
+}
+
+/* ═══════════════════════════════════════════════
+   ACHIEVEMENT TOASTS
+═══════════════════════════════════════════════ */
+const achQueue=[];let achBusy=false;
+function showAchievement(icon,name){
+  achQueue.push({icon,name});if(!achBusy)drainAch();
+}
+function drainAch(){
+  if(!achQueue.length){achBusy=false;return}
+  achBusy=true;const{icon,name}=achQueue.shift();
+  const t=document.getElementById('achToast');
+  document.getElementById('achIcon').textContent=icon;
+  document.getElementById('achName').textContent=name;
+  t.classList.add('show');
+  setTimeout(()=>{t.classList.remove('show');setTimeout(drainAch,500)},3000);
+}
+
+/* ═══════════════════════════════════════════════
+   SCROLL REVEAL
+═══════════════════════════════════════════════ */
+const obs=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){e.target.classList.add('vis');obs.unobserve(e.target)}
+}),{threshold:.1});
+document.querySelectorAll('.rv').forEach(el=>obs.observe(el));
+
+/* Achievement triggers on scroll */
+const achTriggers=[
+  {id:'quests',icon:'📜',name:'Quest Log Discovered'},
+  {id:'skills',icon:'🌳',name:'Skill Tree Revealed'},
+  {id:'sheet', icon:'📋',name:'Character Sheet Opened'}
+];
+const achFired=new Set();
+const achObs=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting && !achFired.has(e.target.id)){
+    achFired.add(e.target.id);
+    const t=achTriggers.find(a=>a.id===e.target.id);
+    if(t)showAchievement(t.icon,t.name);
+  }
+}),{threshold:.2});
+achTriggers.forEach(a=>{const el=document.getElementById(a.id);if(el)achObs.observe(el)});
+
+/* Active nav */
+const secs=['hero','quests','skills','sheet'];
+const navLinks=document.querySelectorAll('.hud-nav a');
+addEventListener('scroll',()=>{
+  let cur='';secs.forEach(id=>{const el=document.getElementById(id);if(el&&scrollY>=el.offsetTop-120)cur=id});
+  navLinks.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+cur));
+});
+
+/* Radar resize */
+addEventListener('resize',()=>{if(document.getElementById('app').style.display!=='none')drawRadar()});
+</script>
+</body>
+</html>

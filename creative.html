@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chaitanya — Portfolio Quest</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
+
+    :root {
+      --bg:       #0a0e1a;
+      --panel:    #0d1425;
+      --border:   #1e3a5f;
+      --accent:   #00d4ff;
+      --gold:     #ffd700;
+      --green:    #00ff88;
+      --red:      #ff4466;
+      --purple:   #b366ff;
+      --text:     #c8d8e8;
+      --dim:      #5a7a9a;
+      --glow:     0 0 20px rgba(0,212,255,0.4);
+      --glow-g:   0 0 20px rgba(0,255,136,0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Scanline overlay ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 9999;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+      pointer-events: none;
+    }
+
+    /* ── Starfield ── */
+    #stars {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 40% 10%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 55% 70%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 30%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 85% 55%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 92% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 60% 90%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 33% 60%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(2px 2px at 78% 85%, rgba(0,212,255,0.3) 0%, transparent 100%),
+        radial-gradient(2px 2px at 45% 25%, rgba(0,255,136,0.2) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* ── Boot Screen ── */
+    #boot {
+      position: fixed; inset: 0; z-index: 1000;
+      background: #000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 1.5rem;
+    }
+    #boot h1 {
+      font-family: 'Press Start 2P', monospace;
+      color: var(--accent);
+      font-size: clamp(0.9rem, 3vw, 1.4rem);
+      text-shadow: var(--glow);
+      text-align: center;
+      line-height: 1.8;
+      animation: flicker 3s infinite;
+    }
+    #boot .sub {
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--green);
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      animation: blink 1s step-end infinite;
+    }
+    #start-btn {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.75rem;
+      padding: 1rem 2rem;
+      background: transparent;
+      color: var(--gold);
+      border: 2px solid var(--gold);
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+      animation: pulse-border 1.5s ease-in-out infinite;
+    }
+    #start-btn:hover {
+      background: var(--gold);
+      color: #000;
+      box-shadow: 0 0 30px rgba(255,215,0,0.6);
+    }
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 8px rgba(255,215,0,0.3); }
+      50% { box-shadow: 0 0 24px rgba(255,215,0,0.7); }
+    }
+    @keyframes flicker {
+      0%,100% { opacity: 1; } 92% { opacity: 1; } 93% { opacity: 0.4; } 94% { opacity: 1; }
+    }
+    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+
+    /* ── Main layout ── */
+    #app {
+      position: relative; z-index: 1;
+      display: none;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ── HUD / Nav ── */
+    #hud {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,14,26,0.95);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem;
+      height: 56px;
+    }
+    .hud-name {
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--accent);
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+    }
+    .hud-nav {
+      display: flex; gap: 0.2rem;
+      list-style: none;
+    }
+    .hud-nav a {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--dim);
+      text-decoration: none;
+      padding: 0.4rem 0.9rem;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+    .hud-nav a:hover, .hud-nav a.active {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: rgba(0,212,255,0.08);
+      box-shadow: var(--glow);
+    }
+    .hud-xp {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--gold);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .xp-bar-wrap {
+      width: 80px; height: 6px;
+      background: #1a2a3a;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .xp-bar { height: 100%; background: var(--gold); border-radius: 3px; width: 0; transition: width 2s ease; }
+
+    /* ── Section wrapper ── */
+    .zone {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 5rem 2rem;
+    }
+
+    /* ── Zone header ── */
+    .zone-header {
+      display: flex; align-items: center; gap: 1rem;
+      margin-bottom: 3rem;
+    }
+    .zone-icon {
+      font-size: 1.8rem;
+      filter: drop-shadow(0 0 8px currentColor);
+    }
+    .zone-title-block { flex: 1; }
+    .zone-tag {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--accent);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 0.3rem;
+    }
+    .zone-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(0.8rem, 2.5vw, 1.1rem);
+      color: #fff;
+      line-height: 1.6;
+    }
+    .zone-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+      opacity: 0.4;
+    }
+
+    /* ── Panel card ── */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.8rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .panel:hover {
+      border-color: var(--accent);
+      box-shadow: var(--glow);
+    }
+    .panel::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .panel:hover::before { opacity: 1; }
+
+    /* ────────────────────────────────────────────
+       HERO / CHARACTER SCREEN
+    ─────────────────────────────────────────── */
+    #hero {
+      min-height: 100vh;
+      display: flex; align-items: center;
+      background: linear-gradient(160deg, #0a0e1a 0%, #0d1e35 50%, #0a0e1a 100%);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-inner {
+      max-width: 1140px; margin: 0 auto; padding: 4rem 2rem;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+    }
+    @media (max-width: 768px) { .hero-inner { grid-template-columns: 1fr; gap: 2.5rem; } }
+
+    /* Character portrait */
+    .char-portrait {
+      display: flex; flex-direction: column; align-items: center; gap: 1.5rem;
+    }
+    .portrait-frame {
+      position: relative;
+      width: 180px; height: 180px;
+    }
+    .portrait-hex {
+      width: 180px; height: 180px;
+      background: linear-gradient(135deg, #0d1e35, #162a45);
+      border: 2px solid var(--accent);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 5rem;
+      box-shadow: var(--glow), inset 0 0 30px rgba(0,212,255,0.05);
+      animation: float 4s ease-in-out infinite;
+      position: relative;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .level-badge {
+      position: absolute; bottom: -12px; right: -12px;
+      width: 44px; height: 44px;
+      background: var(--gold);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.65rem;
+      color: #000;
+      font-weight: 900;
+      box-shadow: 0 0 16px rgba(255,215,0,0.6);
+    }
+    .corner { position: absolute; width: 12px; height: 12px; border-color: var(--accent); border-style: solid; }
+    .corner-tl { top: -2px; left: -2px; border-width: 2px 0 0 2px; }
+    .corner-tr { top: -2px; right: -2px; border-width: 2px 2px 0 0; }
+    .corner-bl { bottom: -2px; left: -2px; border-width: 0 0 2px 2px; }
+    .corner-br { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }
+
+    .char-name {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(0.6rem, 2vw, 0.85rem);
+      color: #fff;
+      text-align: center;
+      line-height: 1.8;
+      text-shadow: var(--glow);
+    }
+    .char-class {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--accent);
+      letter-spacing: 2px;
+      text-align: center;
+    }
+
+    /* Stat bars */
+    .stat-block { width: 100%; }
+    .stat-row {
+      display: flex; align-items: center; gap: 0.8rem;
+      margin-bottom: 0.9rem;
+    }
+    .stat-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--dim);
+      width: 100px; flex-shrink: 0;
+      letter-spacing: 1px;
+    }
+    .stat-bar-wrap {
+      flex: 1; height: 10px;
+      background: #1a2a3a;
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .stat-bar {
+      height: 100%; border-radius: 5px;
+      width: 0;
+      transition: width 1.5s cubic-bezier(0.4,0,0.2,1);
+    }
+    .stat-val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      color: #fff;
+      width: 36px; text-align: right;
+    }
+
+    /* Hero right side */
+    .hero-info { display: flex; flex-direction: column; gap: 1.5rem; }
+    .hero-greeting {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--green);
+      letter-spacing: 2px;
+    }
+    .hero-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(0.9rem, 3vw, 1.3rem);
+      color: #fff;
+      line-height: 1.8;
+    }
+    .hero-title span { color: var(--accent); }
+    .hero-bio {
+      font-size: 1rem;
+      color: var(--text);
+      line-height: 1.8;
+      border-left: 3px solid var(--accent);
+      padding-left: 1rem;
+      background: rgba(0,212,255,0.03);
+      border-radius: 0 6px 6px 0;
+      padding: 1rem 1rem 1rem 1.2rem;
+    }
+    .trait-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .trait {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.68rem;
+      padding: 0.3rem 0.8rem;
+      border-radius: 4px;
+      letter-spacing: 1px;
+    }
+    .trait-blue  { background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.3); }
+    .trait-green { background: rgba(0,255,136,0.1); color: var(--green);  border: 1px solid rgba(0,255,136,0.3); }
+    .trait-gold  { background: rgba(255,215,0,0.1); color: var(--gold);   border: 1px solid rgba(255,215,0,0.3); }
+    .trait-purple{ background: rgba(179,102,255,0.1); color: var(--purple);border: 1px solid rgba(179,102,255,0.3); }
+
+    /* ── QUEST LOG (Projects) ── */
+    #quests { background: #080c18; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .quest-list { display: flex; flex-direction: column; gap: 1.4rem; }
+    .quest-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.6rem;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 1.4rem;
+      align-items: start;
+      transition: all 0.3s;
+      cursor: default;
+    }
+    .quest-card:hover {
+      border-color: var(--green);
+      box-shadow: var(--glow-g);
+      transform: translateX(6px);
+    }
+    .quest-status {
+      width: 48px; height: 48px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+    .quest-status.done  { background: rgba(0,255,136,0.1); border: 1px solid var(--green); }
+    .quest-status.epic  { background: rgba(179,102,255,0.1); border: 1px solid var(--purple); }
+    .quest-body h3 {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.9rem;
+      color: #fff;
+      margin-bottom: 0.5rem;
+      letter-spacing: 1px;
+    }
+    .quest-body p {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.7;
+      margin-bottom: 0.8rem;
+    }
+    .quest-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .quest-tag {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      padding: 0.2rem 0.6rem;
+      background: rgba(0,212,255,0.08);
+      color: var(--accent);
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+    .quest-reward {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem;
+      flex-shrink: 0;
+    }
+    .reward-badge {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.5rem;
+      padding: 0.4rem 0.7rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .reward-green { background: rgba(0,255,136,0.15); color: var(--green); border: 1px solid var(--green); }
+    .reward-purple { background: rgba(179,102,255,0.15); color: var(--purple); border: 1px solid var(--purple); }
+    .reward-xp {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--gold);
+    }
+
+    /* ── SKILL TREE (Courses) ── */
+    #skills-zone { background: #0a0e1a; }
+    .skill-tree {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.2rem;
+    }
+    .skill-node {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.4rem;
+      position: relative;
+      transition: all 0.3s;
+      cursor: default;
+    }
+    .skill-node:hover {
+      border-color: var(--purple);
+      box-shadow: 0 0 20px rgba(179,102,255,0.3);
+      transform: translateY(-4px);
+    }
+    .skill-node.unlocked::after {
+      content: 'UNLOCKED';
+      position: absolute; top: 0.7rem; right: 0.7rem;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.4rem;
+      color: var(--green);
+      letter-spacing: 0.5px;
+    }
+    .skill-icon {
+      font-size: 1.8rem;
+      margin-bottom: 0.8rem;
+      display: block;
+      filter: drop-shadow(0 0 6px rgba(179,102,255,0.5));
+    }
+    .skill-name {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.8rem;
+      color: #fff;
+      margin-bottom: 0.4rem;
+      letter-spacing: 1px;
+    }
+    .skill-desc {
+      font-size: 0.83rem;
+      color: var(--dim);
+      line-height: 1.6;
+      margin-bottom: 0.8rem;
+    }
+    .skill-level {
+      display: flex; gap: 0.3rem;
+    }
+    .pip {
+      width: 8px; height: 8px;
+      border-radius: 2px;
+      background: var(--border);
+    }
+    .pip.filled { background: var(--purple); box-shadow: 0 0 6px var(--purple); }
+
+    /* ── CHARACTER SHEET (Resume) ── */
+    #char-sheet { background: #080c18; border-top: 1px solid var(--border); }
+    .sheet-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+    @media (max-width: 700px) { .sheet-grid { grid-template-columns: 1fr; } }
+
+    .sheet-block {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.6rem;
+    }
+    .sheet-block-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.55rem;
+      color: var(--accent);
+      letter-spacing: 2px;
+      margin-bottom: 1.2rem;
+      padding-bottom: 0.8rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .sheet-entry { margin-bottom: 1.2rem; }
+    .sheet-entry strong {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.85rem;
+      color: #fff;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+    .sheet-entry .meta {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent);
+      margin-bottom: 0.3rem;
+    }
+    .sheet-entry p {
+      font-size: 0.85rem;
+      color: var(--dim);
+      line-height: 1.6;
+    }
+
+    /* Inventory (skills) */
+    .inventory { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .inv-item {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      padding: 0.3rem 0.7rem;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+    .inv-lang   { background: rgba(0,212,255,0.1);   color: var(--accent); border: 1px solid rgba(0,212,255,0.25); }
+    .inv-fw     { background: rgba(0,255,136,0.1);   color: var(--green);  border: 1px solid rgba(0,255,136,0.25); }
+    .inv-tool   { background: rgba(179,102,255,0.1); color: var(--purple); border: 1px solid rgba(179,102,255,0.25); }
+
+    /* Contact / comms */
+    .comms-list { list-style: none; }
+    .comms-list li {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text);
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 0.7rem;
+    }
+    .comms-list li:last-child { border-bottom: none; }
+    .comms-list .label { color: var(--accent); width: 70px; flex-shrink: 0; }
+
+    /* ── Footer ── */
+    footer {
+      background: #050810;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+    footer p {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--dim);
+      letter-spacing: 1px;
+    }
+    footer span { color: var(--accent); }
+
+    /* ── Scroll reveal ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Responsive nav ── */
+    @media (max-width: 600px) {
+      .hud-nav { gap: 0; }
+      .hud-nav a { padding: 0.35rem 0.5rem; font-size: 0.6rem; }
+      .hud-xp { display: none; }
+      .quest-card { grid-template-columns: 1fr; }
+      .quest-reward { align-items: flex-start; }
+    }
+
+    /* ── Typing cursor ── */
+    .cursor::after {
+      content: '█';
+      animation: blink 1s step-end infinite;
+      color: var(--accent);
+    }
+
+    /* ── Glitch text ── */
+    .glitch {
+      position: relative;
+    }
+    .glitch::before, .glitch::after {
+      content: attr(data-text);
+      position: absolute; left: 0; top: 0;
+      width: 100%;
+    }
+    .glitch::before {
+      color: #ff004f;
+      animation: glitch1 3s infinite;
+      clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+    }
+    .glitch::after {
+      color: #00fff9;
+      animation: glitch2 3s infinite;
+      clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+    }
+    @keyframes glitch1 {
+      0%,90%,100% { transform: translate(0); }
+      92% { transform: translate(-2px, 1px); }
+      94% { transform: translate(2px, -1px); }
+    }
+    @keyframes glitch2 {
+      0%,90%,100% { transform: translate(0); }
+      92% { transform: translate(2px, 1px); }
+      94% { transform: translate(-2px, -1px); }
+    }
+  </style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<!-- ══════════════════════════════════════════
+     BOOT SCREEN
+══════════════════════════════════════════ -->
+<div id="boot">
+  <h1>PORTFOLIO OS v2.0<br><span style="color:var(--gold)">━━━━━━━━━━━━━━━━━</span><br>LOADING CHARACTER...</h1>
+  <p class="sub">&gt; PRESS START TO PLAY_</p>
+  <button id="start-btn" onclick="launchApp()">▶ PRESS START</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- HUD -->
+  <nav id="hud">
+    <span class="hud-name">&gt; A.L.V.Chaitanya</span>
+    <ul class="hud-nav">
+      <li><a href="#hero"       class="active">// PROFILE</a></li>
+      <li><a href="#quests">// QUESTS</a></li>
+      <li><a href="#skills-zone">// SKILLS</a></li>
+      <li><a href="#char-sheet">// SHEET</a></li>
+    </ul>
+    <div class="hud-xp">
+      <span>XP</span>
+      <div class="xp-bar-wrap"><div class="xp-bar" id="xpBar"></div></div>
+      <span id="xpVal">0</span>
+    </div>
+  </nav>
+
+  <!-- ══ HERO — CHARACTER PROFILE ══════════════════ -->
+  <section id="hero">
+    <div class="hero-inner">
+
+      <!-- Character portrait + stats -->
+      <div class="char-portrait">
+        <div class="portrait-frame">
+          <div class="portrait-hex">
+            ⚔️
+            <div class="level-badge">LV1</div>
+          </div>
+          <div class="corner corner-tl"></div>
+          <div class="corner corner-tr"></div>
+          <div class="corner corner-bl"></div>
+          <div class="corner corner-br"></div>
+        </div>
+        <p class="char-name">AVULA LAKSHMI<br>VENKATA CHAITANYA</p>
+        <p class="char-class">[ CSE ENGINEER · VIT VELLORE ]</p>
+
+        <!-- Stats -->
+        <div class="stat-block" style="margin-top:1rem; width:100%; max-width:340px;">
+          <div class="stat-row">
+            <span class="stat-label">CODING</span>
+            <div class="stat-bar-wrap"><div class="stat-bar" data-val="82" style="background:linear-gradient(90deg,var(--accent),#0090cc);"></div></div>
+            <span class="stat-val">82</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">PROBLEM SOLVE</span>
+            <div class="stat-bar-wrap"><div class="stat-bar" data-val="78" style="background:linear-gradient(90deg,var(--green),#00aa66);"></div></div>
+            <span class="stat-val">78</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">ML / AI</span>
+            <div class="stat-bar-wrap"><div class="stat-bar" data-val="70" style="background:linear-gradient(90deg,var(--purple),#8844cc);"></div></div>
+            <span class="stat-val">70</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">WEB DEV</span>
+            <div class="stat-bar-wrap"><div class="stat-bar" data-val="75" style="background:linear-gradient(90deg,var(--gold),#cc9900);"></div></div>
+            <span class="stat-val">75</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">TEAMWORK</span>
+            <div class="stat-bar-wrap"><div class="stat-bar" data-val="88" style="background:linear-gradient(90deg,#ff6699,#cc3366);"></div></div>
+            <span class="stat-val">88</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero info -->
+      <div class="hero-info">
+        <p class="hero-greeting">&gt; INITIALIZING PROFILE...</p>
+        <h1 class="hero-title glitch" data-text="WELCOME TO MY PORTFOLIO QUEST">
+          WELCOME TO MY<br><span>PORTFOLIO QUEST</span>
+        </h1>
+        <p class="hero-bio">
+          I am a first-year Computer Science undergraduate at Vellore Institute of Technology, Vellore (Batch 2025–2029). I am passionate about building software that solves real problems — from intelligent systems to full-stack applications. Every project is a quest, every bug a boss to defeat.
+        </p>
+        <div class="trait-chips">
+          <span class="trait trait-blue">Full-Stack Dev</span>
+          <span class="trait trait-green">Machine Learning</span>
+          <span class="trait trait-gold">DSA &amp; Algorithms</span>
+          <span class="trait trait-purple">Python · Java · C++</span>
+          <span class="trait trait-blue">Open Source</span>
+          <span class="trait trait-green">Problem Solver</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══ QUEST LOG — PROJECTS ══════════════════════ -->
+  <section id="quests">
+    <div class="zone reveal">
+      <div class="zone-header">
+        <span class="zone-icon" style="color:var(--green)">📜</span>
+        <div class="zone-title-block">
+          <p class="zone-tag">// chapter 02</p>
+          <h2 class="zone-title">QUEST LOG</h2>
+        </div>
+        <div class="zone-line"></div>
+      </div>
+
+      <div class="quest-list">
+
+        <div class="quest-card reveal">
+          <div class="quest-status done">🎯</div>
+          <div class="quest-body">
+            <h3>OPERATION: FACE SHIELD</h3>
+            <p>Built a real-time attendance system using face recognition. The system identifies students via webcam and auto-logs attendance — eliminating proxy and manual roll-calls.</p>
+            <div class="quest-tags">
+              <span class="quest-tag">Python</span>
+              <span class="quest-tag">OpenCV</span>
+              <span class="quest-tag">face_recognition</span>
+              <span class="quest-tag">NumPy</span>
+              <span class="quest-tag">CSV</span>
+            </div>
+          </div>
+          <div class="quest-reward">
+            <span class="reward-badge reward-green">✓ COMPLETED</span>
+            <span class="reward-xp">+250 XP</span>
+            <span class="reward-xp" style="color:var(--accent)">~96% ACC</span>
+          </div>
+        </div>
+
+        <div class="quest-card reveal">
+          <div class="quest-status done">🛒</div>
+          <div class="quest-body">
+            <h3>PROJECT: NEXUS MARKET</h3>
+            <p>Engineered a full-stack e-commerce platform with JWT auth, product listing, shopping cart, and order management. REST API on Node.js/Express, React frontend, MongoDB backend.</p>
+            <div class="quest-tags">
+              <span class="quest-tag">React</span>
+              <span class="quest-tag">Node.js</span>
+              <span class="quest-tag">Express</span>
+              <span class="quest-tag">MongoDB</span>
+              <span class="quest-tag">JWT</span>
+            </div>
+          </div>
+          <div class="quest-reward">
+            <span class="reward-badge reward-green">✓ DEPLOYED</span>
+            <span class="reward-xp">+300 XP</span>
+          </div>
+        </div>
+
+        <div class="quest-card reveal">
+          <div class="quest-status epic">🧠</div>
+          <div class="quest-body">
+            <h3>MISSION: MIND READER</h3>
+            <p>Trained an LSTM and Logistic Regression classifier on Twitter data to predict sentiment. Scraped data with Tweepy, preprocessed with NLTK, and visualised results with Matplotlib.</p>
+            <div class="quest-tags">
+              <span class="quest-tag">Python</span>
+              <span class="quest-tag">NLTK</span>
+              <span class="quest-tag">TensorFlow</span>
+              <span class="quest-tag">Tweepy</span>
+              <span class="quest-tag">Matplotlib</span>
+            </div>
+          </div>
+          <div class="quest-reward">
+            <span class="reward-badge reward-purple">★ EPIC</span>
+            <span class="reward-xp">+350 XP</span>
+            <span class="reward-xp" style="color:var(--accent)">88% ACC</span>
+          </div>
+        </div>
+
+        <div class="quest-card reveal">
+          <div class="quest-status epic">⚙️</div>
+          <div class="quest-body">
+            <h3>CODEX: ARENA JUDGE</h3>
+            <p>Built a mini competitive programming judge — accepts Python, C++ and Java submissions, runs them in isolated Docker containers, and returns verdicts within time limits. Like a miniature LeetCode.</p>
+            <div class="quest-tags">
+              <span class="quest-tag">Flask</span>
+              <span class="quest-tag">Docker</span>
+              <span class="quest-tag">PostgreSQL</span>
+              <span class="quest-tag">C++</span>
+              <span class="quest-tag">Python</span>
+            </div>
+          </div>
+          <div class="quest-reward">
+            <span class="reward-badge reward-purple">★ EPIC</span>
+            <span class="reward-xp">+400 XP</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SKILL TREE — COURSES ══════════════════════ -->
+  <section id="skills-zone">
+    <div class="zone reveal">
+      <div class="zone-header">
+        <span class="zone-icon" style="color:var(--purple)">🌳</span>
+        <div class="zone-title-block">
+          <p class="zone-tag">// chapter 03</p>
+          <h2 class="zone-title">SKILL TREE</h2>
+        </div>
+        <div class="zone-line" style="background:linear-gradient(90deg,var(--purple),transparent);"></div>
+      </div>
+
+      <div class="skill-tree">
+
+        <div class="skill-node unlocked reveal">
+          <span class="skill-icon">📊</span>
+          <div class="skill-name">DATA STRUCTURES &amp; ALGO</div>
+          <div class="skill-desc">Arrays, trees, graphs, DP, and complexity analysis — the backbone of problem solving.</div>
+          <div class="skill-level">
+            <div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div>
+            <div class="pip filled"></div><div class="pip"></div>
+          </div>
+        </div>
+
+        <div class="skill-node unlocked reveal">
+          <span class="skill-icon">🤖</span>
+          <div class="skill-name">MACHINE LEARNING</div>
+          <div class="skill-desc">Supervised &amp; unsupervised learning, neural networks, SVM, and model evaluation.</div>
+          <div class="skill-level">
+            <div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div>
+            <div class="pip"></div><div class="pip"></div>
+          </div>
+        </div>
+
+        <div class="skill-node unlocked reveal">
+          <span class="skill-icon">🔒</span>
+          <div class="skill-name">COMPUTER NETWORKS</div>
+          <div class="skill-desc">OSI &amp; TCP/IP models, routing, socket programming, and network security.</div>
+          <div class="skill-level">
+            <div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div>
+            <div class="pip filled"></div><div class="pip"></div>
+          </div>
+        </div>
+
+        <div class="skill-node unlocked reveal">
+          <span class="skill-icon">💾</span>
+          <div class="skill-name">DATABASE MANAGEMENT</div>
+          <div class="skill-desc">SQL, relational algebra, normalisation, transactions, indexing, and NoSQL basics.</div>
+          <div class="skill-level">
+            <div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div>
+            <div class="pip filled"></div><div class="pip"></div>
+          </div>
+        </div>
+
+        <div class="skill-node unlocked reveal">
+          <span class="skill-icon">💻</span>
+          <div class="skill-name">OPERATING SYSTEMS</div>
+          <div class="skill-desc">Scheduling, memory management, file systems, deadlocks, and synchronisation.</div>
+          <div class="skill-level">
+            <div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div>
+            <div class="pip"></div><div class="pip"></div>
+          </div>
+        </div>
+
+        <div class="skill-node unlocked reveal">
+          <span class="skill-icon">⚙️</span>
+          <div class="skill-name">OOP</div>
+          <div class="skill-desc">Classes, inheritance, polymorphism, design patterns, and SOLID principles in Java &amp; C++.</div>
+          <div class="skill-level">
+            <div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div>
+            <div class="pip filled"></div><div class="pip"></div>
+          </div>
+        </div>
+
+        <div class="skill-node unlocked reveal">
+          <span class="skill-icon">📈</span>
+          <div class="skill-name">PROBABILITY &amp; STATS</div>
+          <div class="skill-desc">Distributions, hypothesis testing, regression, and Bayesian inference for ML applications.</div>
+          <div class="skill-level">
+            <div class="pip filled"></div><div class="pip filled"></div><div class="pip filled"></div>
+            <div class="pip"></div><div class="pip"></div>
+          </div>
+        </div>
+
+        <div class="skill-node unlocked reveal">
+          <span class="skill-icon">☁️</span>
+          <div class="skill-name">CLOUD COMPUTING</div>
+          <div class="skill-desc">IaaS/PaaS/SaaS, virtualisation, AWS/Azure basics, Docker, and microservices.</div>
+          <div class="skill-level">
+            <div class="pip filled"></div><div class="pip filled"></div><div class="pip"></div>
+            <div class="pip"></div><div class="pip"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CHARACTER SHEET — RESUME ══════════════════ -->
+  <section id="char-sheet">
+    <div class="zone reveal">
+      <div class="zone-header">
+        <span class="zone-icon" style="color:var(--gold)">📋</span>
+        <div class="zone-title-block">
+          <p class="zone-tag">// chapter 04</p>
+          <h2 class="zone-title">CHARACTER SHEET</h2>
+        </div>
+        <div class="zone-line" style="background:linear-gradient(90deg,var(--gold),transparent);"></div>
+      </div>
+
+      <div class="sheet-grid">
+
+        <!-- Education -->
+        <div class="sheet-block reveal">
+          <div class="sheet-block-title">🎓 ORIGIN STORY (EDUCATION)</div>
+          <div class="sheet-entry">
+            <strong>B.Tech — Computer Science &amp; Engineering</strong>
+            <div class="meta">VIT Vellore &nbsp;·&nbsp; 2025 – 2029</div>
+            <p>Pursuing a full-time degree with focus on software engineering, machine learning, and distributed systems.</p>
+          </div>
+          <div class="sheet-entry">
+            <strong>Class XII (CBSE)</strong>
+            <div class="meta">2024 – 2025 &nbsp;·&nbsp; PCM with Computer Science</div>
+            <p>Scored 85% overall. Achieved a perfect 100/100 in Artificial Intelligence.</p>
+          </div>
+          <div class="sheet-entry">
+            <strong>Class X (CBSE)</strong>
+            <div class="meta">2022 – 2023</div>
+            <p>Scored 96%.</p>
+          </div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="sheet-block reveal">
+          <div class="sheet-block-title">🏆 ACHIEVEMENTS UNLOCKED</div>
+          <div class="sheet-entry">
+            <strong>Hackathon Finalist — VIT HackFusion 2025</strong>
+            <p>Developed a health-tech prototype in 24 hours using React Native and Firebase, reaching the top 10 finalist teams.</p>
+          </div>
+          <div class="sheet-entry">
+            <strong>100/100 in Artificial Intelligence</strong>
+            <p>Achieved a perfect score in AI during Class XII board examinations.</p>
+          </div>
+          <div class="sheet-entry">
+            <strong>Academic Excellence</strong>
+            <p>Recognised for consistent academic performance throughout semesters at VIT Vellore.</p>
+          </div>
+        </div>
+
+        <!-- Inventory / Skills -->
+        <div class="sheet-block reveal">
+          <div class="sheet-block-title">🎒 INVENTORY (SKILLS)</div>
+          <div class="sheet-entry">
+            <strong>Languages</strong>
+            <div class="inventory" style="margin-top:0.5rem;">
+              <span class="inv-item inv-lang">Python</span>
+              <span class="inv-item inv-lang">Java</span>
+              <span class="inv-item inv-lang">C++</span>
+              <span class="inv-item inv-lang">JavaScript</span>
+              <span class="inv-item inv-lang">SQL</span>
+              <span class="inv-item inv-lang">Bash</span>
+            </div>
+          </div>
+          <div class="sheet-entry" style="margin-top:1rem;">
+            <strong>Frameworks &amp; Libraries</strong>
+            <div class="inventory" style="margin-top:0.5rem;">
+              <span class="inv-item inv-fw">React</span>
+              <span class="inv-item inv-fw">Node.js</span>
+              <span class="inv-item inv-fw">Express</span>
+              <span class="inv-item inv-fw">Flask</span>
+              <span class="inv-item inv-fw">TensorFlow</span>
+              <span class="inv-item inv-fw">scikit-learn</span>
+              <span class="inv-item inv-fw">OpenCV</span>
+            </div>
+          </div>
+          <div class="sheet-entry" style="margin-top:1rem;">
+            <strong>Tools</strong>
+            <div class="inventory" style="margin-top:0.5rem;">
+              <span class="inv-item inv-tool">Git</span>
+              <span class="inv-item inv-tool">Docker</span>
+              <span class="inv-item inv-tool">MongoDB</span>
+              <span class="inv-item inv-tool">PostgreSQL</span>
+              <span class="inv-item inv-tool">VS Code</span>
+              <span class="inv-item inv-tool">Linux</span>
+              <span class="inv-item inv-tool">Postman</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact / Comms -->
+        <div class="sheet-block reveal">
+          <div class="sheet-block-title">📡 COMMUNICATIONS</div>
+          <ul class="comms-list">
+            <li><span class="label">EMAIL</span> avula.lakshmi2025@vitstudent.ac.in</li>
+            <li><span class="label">BASE</span> VIT Vellore, Tamil Nadu, India</li>
+            <li><span class="label">STATUS</span> <span style="color:var(--green)">● OPEN TO OPPORTUNITIES</span></li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2026 &nbsp;<span>Avula Lakshmi Venkata Chaitanya</span> &nbsp;·&nbsp; B.Tech CSE, VIT Vellore</p>
+  </footer>
+
+</div><!-- #app -->
+
+<script>
+  /* ── Boot screen ── */
+  function launchApp() {
+    const boot = document.getElementById('boot');
+    boot.style.transition = 'opacity 0.8s';
+    boot.style.opacity = '0';
+    setTimeout(() => {
+      boot.style.display = 'none';
+      const app = document.getElementById('app');
+      app.style.display = 'flex';
+      app.style.flexDirection = 'column';
+      setTimeout(animateStats, 300);
+      setTimeout(animateXP, 600);
+    }, 800);
+  }
+
+  /* ── Animate stat bars ── */
+  function animateStats() {
+    document.querySelectorAll('.stat-bar').forEach(bar => {
+      const val = bar.getAttribute('data-val');
+      bar.style.width = val + '%';
+    });
+  }
+
+  /* ── XP counter ── */
+  function animateXP() {
+    const bar = document.getElementById('xpBar');
+    const val = document.getElementById('xpVal');
+    const target = 74;
+    let current = 0;
+    bar.style.width = target + '%';
+    const interval = setInterval(() => {
+      current += 2;
+      if (current >= target) { current = target; clearInterval(interval); }
+      val.textContent = current;
+    }, 30);
+  }
+
+  /* ── Scroll reveal ── */
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  /* ── Active nav highlight ── */
+  const sections = ['hero','quests','skills-zone','char-sheet'];
+  const links = document.querySelectorAll('.hud-nav a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && window.scrollY >= el.offsetTop - 100) current = id;
+    });
+    links.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+
+  /* ── Typing effect on boot greeting ── */
+  window.addEventListener('load', () => {
+    const text = '> PRESS START TO PLAY_';
+    const el = document.querySelector('#boot .sub');
+    el.textContent = '';
+    let i = 0;
+    const type = () => {
+      if (i < text.length) { el.textContent += text[i++]; setTimeout(type, 60); }
+    };
+    type();
+  });
+</script>
+</body>
+</html>
